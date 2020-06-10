@@ -36,12 +36,12 @@ public class MyPacMan extends Controller<MOVE>
 		for(GHOST ghost : GHOST.values()) {
 			distances.add((float)game.getShortestPathDistance(posMsPacman, game.getGhostCurrentNodeIndex(ghost)));
 		}
-		float maxDistance = Collections.max(distances);
+		float maxDistance = Collections.min(distances);
 		float meanDistance = 0;
 		for(Float dist : distances) {
-			meanDistance += (dist/maxDistance)*dist;
+			meanDistance += (1-(dist/maxDistance))*dist;
 		}
-		return meanDistance;
+		return meanDistance/4;
 	}
 	
 	/**
