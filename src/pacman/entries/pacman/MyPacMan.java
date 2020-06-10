@@ -18,11 +18,64 @@ public class MyPacMan extends Controller<MOVE>
 {
 	private MOVE myMove=MOVE.NEUTRAL;
 	
+	// ghost safe distance
+	private static final int MIN_DISTANCE=10;
+	
 	public MOVE getMove(Game game, long timeDue) 
 	{
 		//Place your game logic here to play the game as Ms Pac-Man
 		
+		// utility functions hyperparamenters
+		int[] hypParam0 = new int[3];
+		int[] hypParam1 = new int[3];
+		
+		// Get current MsPacman position
+		int posMsPacman = game.getPacmanCurrentNodeIndex();
+		
+		// check if all ghosts are far enough
+		boolean safe = true;
+		for(GHOST ghost : GHOST.values()) {
+			if(game.getShortestPathDistance(posMsPacman, game.getGhostCurrentNodeIndex(ghost)) > MIN_DISTANCE) {
+				safe = false;
+				break;
+			}
+		}
+		
+		float[] distances = new float[3];
+		double bestMove = 0, utility = 0;
+		int newPosMsPacman = -1;
+		MOVE moves[] = game.getPossibleMoves(posMsPacman);
+		myMove = MOVE.NEUTRAL;
+		for(MOVE move : moves) {
+			newPosMsPacman = game.getNeighbour(posMsPacman, move);
+			if(newPosMsPacman != -1) {
+				distances = getSensorData(game, newPosMsPacman);
+				if(safe)
+					utility = utility0(distances, hypParam0);
+				else
+					utility = utility1(distances, hypParam1);
+				if(utility > bestMove) {
+					bestMove = utility;
+					myMove = move;
+				}
+			}
+		}
+
 		return myMove;
+	}
+	
+	/**
+	 * Retrieves sensor information for MsPacman agent
+	 * @param  game game instance
+	 * @param  posMsPacman current index of MsPacman
+	 * @return array of distances information, in order: average ghosts distance, nearest power pill, nearest pill
+	 */
+	private float[] getSensorData(Game game, int posMsPacman) {
+		float[] distances = new float[3];
+		distances[0] = weightedGhostsDistance(game, posMsPacman);
+		distances[1] = nearestPillDistance(game, posMsPacman, true);
+		distances[2] = nearestPillDistance(game, posMsPacman, false);
+		return distances;
 	}
 	
 	/**
@@ -42,6 +95,30 @@ public class MyPacMan extends Controller<MOVE>
 			meanDistance += (1-(dist/maxDistance))*dist;
 		}
 		return meanDistance/4;
+	}
+	
+	/**
+	 * Computes the distance of the nearest active power pill or simple pill from MsPacman
+	 * @param  game game instance
+	 * @param  posMsPacman current index of MsPacman
+	 * @param  isPowerPill true if power pill, else simple pill
+	 * @return distance from the nearest power pill or simple pill
+	 */
+	private int nearestPillDistance(Game game, int posMsPacman, boolean isPowerPill) {
+		int pillIndices[], minDistance = 100000;
+		boolean isPillActive[];
+		int i = 0;
+		if(isPowerPill) {
+			pillIndices = game.getActivePowerPillsIndices();
+		}
+		else {
+			pillIndices = game.getActivePillsIndices();
+		}
+		for(i = 0; i < pillIndices.length; i++) {
+			if(game.getShortestPathDistance(posMsPacman, pillIndices[i]) < minDistance)
+				minDistance = game.getShortestPathDistance(posMsPacman, pillIndices[i]);
+		}
+		return minDistance;
 	}
 	
 	/**
