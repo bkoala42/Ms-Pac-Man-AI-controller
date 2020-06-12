@@ -4,10 +4,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 
 import pacman.controllers.Controller;
+import pacman.game.Constants.DM;
 import pacman.game.Constants.GHOST;
 import pacman.game.Constants.MOVE;
 import pacman.game.Game;
-
+import java.io.FileWriter;
+import java.io.IOException;
 
 /*
  * This is the class you need to modify for your entry. In particular, you need to
@@ -19,15 +21,27 @@ public class MyPacMan extends Controller<MOVE>
 	private MOVE myMove=MOVE.NEUTRAL;
 	
 	// ghost safe distance
-	private int minDistance = 10;
+	private int minDistance;
 	// utility functions hyperparamenters
 	private float[] hypParam0;
 	private float[] hypParam1;
+	private FileWriter averageGhostDistance = null;
+	private FileWriter pillDistance = null;
+	private FileWriter powerPillDistance = null;
 	
 	public MyPacMan(float[] hypParam0, float[] hypParam1, int minDistance) {
 		this.hypParam0 = hypParam0;
 		this.hypParam1 = hypParam1;
 		this.minDistance = minDistance;
+	}
+	
+	public MyPacMan(float[] hypParam0, float[] hypParam1, int minDistance, FileWriter[] files) {
+		this.hypParam0 = hypParam0;
+		this.hypParam1 = hypParam1;
+		this.minDistance = minDistance;
+		this.averageGhostDistance = files[0];
+		this.pillDistance = files[2];
+		this.powerPillDistance = files[1];
 	}
 
 	public MOVE getMove(Game game, long timeDue) 
@@ -49,6 +63,8 @@ public class MyPacMan extends Controller<MOVE>
 		float[] distances = new float[3];
 		double bestMove = 0, utility = 0;
 		int newPosMsPacman = -1;
+		GHOST edibleGhost = null;
+		boolean hotPursuit = false;
 		MOVE moves[] = game.getPossibleMoves(posMsPacman);
 		myMove = MOVE.NEUTRAL;
 		for(MOVE move : moves) {
@@ -58,15 +74,67 @@ public class MyPacMan extends Controller<MOVE>
 				if(safe)
 					utility = utility0(distances, hypParam0);
 				else
-					utility = utility1(distances, hypParam1);
-				if(utility > bestMove) {
+					edibleGhost = isThereEdibleGhost(game, posMsPacman);
+					if(edibleGhost !=  null) {
+						myMove = chaseTheGhost(game, posMsPacman, edibleGhost);
+						hotPursuit = true;
+					}
+					else
+						utility = utility1(distances, hypParam1);
+				if(utility > bestMove && !hotPursuit) {
 					bestMove = utility;
 					myMove = move;
 				}
 			}
 		}
-
+		
+		/*
+		// avoid turning on yourself without moving
+		MOVE prevMove = game.getPacmanLastMoveMade();
+		switch(myMove) {
+		case UP:
+			if(prevMove == MOVE.DOWN)
+				myMove = MOVE.UP;
+			break;
+		case DOWN:
+			if(prevMove == MOVE.UP)
+				myMove = MOVE.DOWN;
+			break;
+		case LEFT:
+			if(prevMove == MOVE.RIGHT)
+				myMove = MOVE.LEFT;
+			break;
+		case RIGHT:
+			if(prevMove == MOVE.RIGHT)
+				myMove = MOVE.LEFT;
+			break;
+		case NEUTRAL:
+			break;
+		}
+		*/
 		return myMove;
+		
+	}
+	
+	private GHOST isThereEdibleGhost(Game game, int posMsPacman) {
+		int minDistance=Integer.MAX_VALUE;
+		GHOST minGhost=null;		
+		
+		for(GHOST ghost : GHOST.values())
+			if(game.getGhostEdibleTime(ghost)>0)
+			{
+				int distance=game.getShortestPathDistance(posMsPacman,game.getGhostCurrentNodeIndex(ghost));
+				if(distance<minDistance)
+				{
+					minDistance=distance;
+					minGhost=ghost;
+				}
+			}
+		return minGhost;
+	}
+	
+	private MOVE chaseTheGhost(Game game, int posMsPacman, GHOST ghost) {
+		return game.getNextMoveTowardsTarget(game.getPacmanCurrentNodeIndex(),game.getGhostCurrentNodeIndex(ghost),DM.PATH);
 	}
 	
 	/**
@@ -80,6 +148,16 @@ public class MyPacMan extends Controller<MOVE>
 		distances[0] = weightedGhostsDistance(game, posMsPacman);
 		distances[1] = nearestPillDistance(game, posMsPacman, true);
 		distances[2] = nearestPillDistance(game, posMsPacman, false);
+		/*
+		try {
+			this.averageGhostDistance.write(distances[0]+"\n");
+			this.pillDistance.write(distances[1]+"\n");
+			this.powerPillDistance.write(distances[2]+"\n");
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		*/
 		return distances;
 	}
 	
@@ -148,6 +226,6 @@ public class MyPacMan extends Controller<MOVE>
 	 * @return utility value
 	 */
 	private double utility1(float[] distances, float[] hypParam) {
-		return hypParam[0]*distances[0] + Math.pow(distances[1], -hypParam[1]) + Math.pow(distances[2], -hypParam[2]);
+		return hypParam[0]*(1/distances[0]) + Math.pow(distances[1], -hypParam[1]) + Math.pow(distances[2], -hypParam[2]);
 	}
 }
