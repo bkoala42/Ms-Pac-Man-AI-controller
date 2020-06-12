@@ -19,15 +19,20 @@ public class MyPacMan extends Controller<MOVE>
 	private MOVE myMove=MOVE.NEUTRAL;
 	
 	// ghost safe distance
-	private static final int MIN_DISTANCE=10;
+	private int minDistance = 10;
+	// utility functions hyperparamenters
+	private float[] hypParam0;
+	private float[] hypParam1;
 	
+	public MyPacMan(float[] hypParam0, float[] hypParam1, int minDistance) {
+		this.hypParam0 = hypParam0;
+		this.hypParam1 = hypParam1;
+		this.minDistance = minDistance;
+	}
+
 	public MOVE getMove(Game game, long timeDue) 
 	{
 		//Place your game logic here to play the game as Ms Pac-Man
-		
-		// utility functions hyperparamenters
-		int[] hypParam0 = new int[3];
-		int[] hypParam1 = new int[3];
 		
 		// Get current MsPacman position
 		int posMsPacman = game.getPacmanCurrentNodeIndex();
@@ -35,7 +40,7 @@ public class MyPacMan extends Controller<MOVE>
 		// check if all ghosts are far enough
 		boolean safe = true;
 		for(GHOST ghost : GHOST.values()) {
-			if(game.getShortestPathDistance(posMsPacman, game.getGhostCurrentNodeIndex(ghost)) > MIN_DISTANCE) {
+			if(game.getShortestPathDistance(posMsPacman, game.getGhostCurrentNodeIndex(ghost)) > minDistance) {
 				safe = false;
 				break;
 			}
@@ -87,9 +92,12 @@ public class MyPacMan extends Controller<MOVE>
 	private float weightedGhostsDistance(Game game, int posMsPacman) {
 		ArrayList<Float> distances = new ArrayList<Float>(4);
 		for(GHOST ghost : GHOST.values()) {
-			distances.add((float)game.getShortestPathDistance(posMsPacman, game.getGhostCurrentNodeIndex(ghost)));
+			if(game.getShortestPathDistance(posMsPacman, game.getGhostCurrentNodeIndex(ghost)) == -1)
+				distances.add((float)100);
+			else
+				distances.add((float)game.getShortestPathDistance(posMsPacman, game.getGhostCurrentNodeIndex(ghost)));
 		}
-		float maxDistance = Collections.min(distances);
+		float maxDistance = Collections.max(distances);
 		float meanDistance = 0;
 		for(Float dist : distances) {
 			meanDistance += (1-(dist/maxDistance))*dist;
@@ -128,7 +136,7 @@ public class MyPacMan extends Controller<MOVE>
 	 * @param  hypParam hyperparameters for the utility function
 	 * @return utility value
 	 */
-	private double utility0(float[] distances, int[] hypParam) {
+	private double utility0(float[] distances, float[] hypParam) {
 		return Math.pow(distances[0], hypParam[0]) + Math.pow(distances[1], hypParam[1]) + Math.pow(distances[2], -hypParam[2]);
 	}
 	
@@ -139,7 +147,7 @@ public class MyPacMan extends Controller<MOVE>
 	 * @param  hypParam hyperparameters for the utility function
 	 * @return utility value
 	 */
-	private double utility1(float[] distances, int[] hypParam) {
-		return hypParam[0]*distances[0] + Math.pow(distances[1], -hypParam[1]) - hypParam[2]*distances[2];
+	private double utility1(float[] distances, float[] hypParam) {
+		return hypParam[0]*distances[0] + Math.pow(distances[1], -hypParam[1]) + Math.pow(distances[2], -hypParam[2]);
 	}
 }
