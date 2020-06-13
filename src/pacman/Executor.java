@@ -49,14 +49,14 @@ public class Executor
 	 */
 	
 	// define hyperparameters range of variation
-	static float maxGamma0 = 6;
+	static float maxGamma0 = 3;
 	static float maxGamma1 = 6;
-	static float minGamma0 = 2;
+	static float minGamma0 = 1;
 	static float minGamma1 = 1;
-	static float maxAlfa0 = 2;
-	static float maxAlfa1 = 2;
+	static float maxAlfa0 = 1.3f;
+	static float maxAlfa1 = 2.5f;
 	static float minAlfa0 = 1;
-	static float minAlfa1 = 1;
+	static float minAlfa1 = 1f;
 	static float maxBeta0 = 2;
 	static float maxBeta1 = 4;
 	static float minBeta0 = 1;
@@ -85,45 +85,48 @@ public class Executor
 		}
 		FileWriter[] files = {ghostsDistancesFile, powerPillDistancesFile, pillDistancesFile};
 		
-		/*
-		// start best parameters search with min values
-		float[] hypParam0 = {minAlfa0, minBeta0, maxGamma0};
-		float[] hypParam1 = {minAlfa1, maxBeta1, minGamma1};
-		int ghostDistance = maxGhostDistance;
 		
-		
-		int i = 0, lateralMovesPlateau = 15;
-		double prevScore = 0, currScore = 0;
-		boolean betterSolution = false;
-		// compute initial score with conservative values
-		prevScore = 0;
-		currScore = exec.runExperiment(new MyPacMan(hypParam0, hypParam1, maxGhostDistance, files),new AggressiveGhosts(),numTrials);
-		System.out.println("Starting score: "+currScore);
-		//prevScore = exec.runExperiment(new MyPacMan(hypParam0, hypParam1, maxGhostDistance),new AggressiveGhosts(),numTrials);
-		//prevScore = exec.runExperiment(new MyPacMan(hypParam0, hypParam1, maxGhostDistance),new Legacy(),numTrials);
-		//prevScore = exec.runExperiment(new MyPacMan(hypParam0, hypParam1, maxGhostDistance),new Legacy2TheReckoning(),numTrials);
-		while(currScore > prevScore || lateralMovesPlateau > 0) {
-			prevScore = currScore;
-			currScore = adjustHyperParameter(exec, hypParam0, hypParam1, ghostDistance, prevScore);
-			if(currScore == prevScore)
-				lateralMovesPlateau--;
-			else
-				lateralMovesPlateau = 15;
-			System.out.println("Iteration "+i+" new score: "+currScore);
-			i++;
-		}
-		for (float element: hypParam0) {
-            System.out.println(element);
-        }
-		System.out.println();
-		for (float element: hypParam1) {
-            System.out.println(element);
-        }
-		System.out.println(ghostDistance);
-		*/
+//		// start best parameters search with min values
+//		float[] hypParam0 = {minAlfa0, minBeta0, maxGamma0};
+//		float[] hypParam1 = {minAlfa1, maxBeta1, minGamma1};
+//		int ghostDistance = maxGhostDistance;
+//		
+//		int i = 0, lateralMovesPlateau = 15;
+//		double prevScore = 0, currScore = 0;
+//		boolean betterSolution = false;
+//		// compute initial score with conservative values
+//		prevScore = 0;
+//		currScore = exec.runExperiment(new MyPacMan(hypParam0, hypParam1, maxGhostDistance, files),new AggressiveGhosts(),numTrials);
+//		System.out.println("Starting score: "+currScore);
+//		//prevScore = exec.runExperiment(new MyPacMan(hypParam0, hypParam1, maxGhostDistance),new AggressiveGhosts(),numTrials);
+//		//prevScore = exec.runExperiment(new MyPacMan(hypParam0, hypParam1, maxGhostDistance),new Legacy(),numTrials);
+//		//prevScore = exec.runExperiment(new MyPacMan(hypParam0, hypParam1, maxGhostDistance),new Legacy2TheReckoning(),numTrials);
+//		while(currScore > prevScore || lateralMovesPlateau > 0) {
+//			prevScore = currScore;
+//			currScore = adjustHyperParameter(exec, hypParam0, hypParam1, ghostDistance, prevScore);
+//			if(currScore == prevScore)
+//				lateralMovesPlateau--;
+//			else
+//				lateralMovesPlateau = 15;
+//			System.out.println("Iteration "+i+" new score: "+currScore);
+//			i++;
+//		}
+//		for (float element: hypParam0) {
+//            System.out.println(element);
+//        }
+//		System.out.println();
+//		for (float element: hypParam1) {
+//            System.out.println(element);
+//        }
+//		System.out.println(ghostDistance);
+//		
 		
 		//run multiple games in batch mode - good for testing.
-		//int numTrials=200;
+//		int numTrials=200;
+//		float[] hypParam0 = {1.06f, 1.4f, 2.6f};
+//		float[] hypParam1 = {1.0f, 3.7f, 1.0f};
+//		int ghostDistance = 8;
+//		System.out.println(exec.runExperiment(new MyPacMan(hypParam0, hypParam1, maxGhostDistance),new AggressiveGhosts(),numTrials));
 		//exec.runExperiment(new MyPacMan(),new RandomGhosts(),numTrials);
 		//exec.runExperiment(new MyPacMan(),new AggressiveGhosts(),numTrials);
 		//exec.runExperiment(new MyPacMan(),new Legacy(),numTrials);
@@ -139,16 +142,16 @@ public class Executor
 		
 		
 		//run the game in asynchronous mode.
-		float[] hypParam0 = {1, 1, 5.96f};
-		float[] hypParam1 = {1, 3.94f, 1.149f};
-		int ghostDistance = 10;
+		float[] hypParam0 = {1.06f, 1.4f, 2.6f};
+		float[] hypParam1 = {1.0f, 3.7f, 1.0f};
+		int ghostDistance = 8;
 		boolean visual=true;
 //		exec.runGameTimed(new NearestPillPacMan(),new AggressiveGhosts(),visual);
 //		exec.runGameTimed(new StarterPacMan(),new StarterGhosts(),visual);
 //		exec.runGameTimed(new HumanController(new KeyBoardInput()),new StarterGhosts(),visual);	
 		exec.runGameTimed(new MyPacMan(hypParam0, hypParam1, ghostDistance, files),new AggressiveGhosts(),visual);
 		
-		/*
+		
 		try {
 			ghostsDistancesFile.close();
 			powerPillDistancesFile.close();
@@ -157,7 +160,7 @@ public class Executor
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		*/
+		
 		/*
 		//run the game in asynchronous mode but advance as soon as both controllers are ready  - this is the mode of the competition.
 		//time limit of DELAY ms still applies.
@@ -186,7 +189,7 @@ public class Executor
 	 * @return new score if a hyperparameter was changed, score otherwise
 	 */
 	public static double adjustHyperParameter(Executor exec, float[] hypParam0, float[] hypParam1, int minDistance, double score) {
-		int delta = 100;
+		int delta = 20;
 		double newScore = 0;
 		int newMinDistance = 0;
 		float[] testParam = new float[3];

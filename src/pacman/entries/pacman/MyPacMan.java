@@ -54,14 +54,14 @@ public class MyPacMan extends Controller<MOVE>
 		// check if all ghosts are far enough
 		boolean safe = true;
 		for(GHOST ghost : GHOST.values()) {
-			if(game.getShortestPathDistance(posMsPacman, game.getGhostCurrentNodeIndex(ghost)) > minDistance) {
+			if(game.getShortestPathDistance(posMsPacman, game.getGhostCurrentNodeIndex(ghost)) < minDistance) {
 				safe = false;
 				break;
 			}
 		}
 		
 		float[] distances = new float[3];
-		double bestMove = 0, utility = 0;
+		double bestMove = 0, utility0 = 0, utility1 = 0, utility = 0;
 		int newPosMsPacman = -1;
 		GHOST edibleGhost = null;
 		boolean hotPursuit = false;
@@ -71,47 +71,39 @@ public class MyPacMan extends Controller<MOVE>
 			newPosMsPacman = game.getNeighbour(posMsPacman, move);
 			if(newPosMsPacman != -1) {
 				distances = getSensorData(game, newPosMsPacman);
-				if(safe)
-					utility = utility0(distances, hypParam0);
-				else
+				if(safe) {
 					edibleGhost = isThereEdibleGhost(game, posMsPacman);
 					if(edibleGhost !=  null) {
 						myMove = chaseTheGhost(game, posMsPacman, edibleGhost);
 						hotPursuit = true;
+						//System.out.println("Ghost chase 0");
 					}
-					else
-						utility = utility1(distances, hypParam1);
-				if(utility > bestMove && !hotPursuit) {
-					bestMove = utility;
-					myMove = move;
+					else {
+						//utility = utility1(distances, hypParam1);
+						utility = utility0(distances, hypParam0);
+						//System.out.println("0 "+utility);
+					}
 				}
+				else {
+					edibleGhost = isThereEdibleGhost(game, posMsPacman);
+					if(edibleGhost !=  null) {
+						myMove = chaseTheGhost(game, posMsPacman, edibleGhost);
+						hotPursuit = true;
+						//System.out.println("Ghost chase 1");
+					}
+					else {
+						//utility = utility1(distances, hypParam0);
+						utility = utility1(distances, hypParam1);
+						//System.out.println("1 "+utility);
+					}
+				}
+			}
+			if(!hotPursuit && utility > bestMove) {
+				bestMove = utility;
+				myMove = move;
 			}
 		}
 		
-		/*
-		// avoid turning on yourself without moving
-		MOVE prevMove = game.getPacmanLastMoveMade();
-		switch(myMove) {
-		case UP:
-			if(prevMove == MOVE.DOWN)
-				myMove = MOVE.UP;
-			break;
-		case DOWN:
-			if(prevMove == MOVE.UP)
-				myMove = MOVE.DOWN;
-			break;
-		case LEFT:
-			if(prevMove == MOVE.RIGHT)
-				myMove = MOVE.LEFT;
-			break;
-		case RIGHT:
-			if(prevMove == MOVE.RIGHT)
-				myMove = MOVE.LEFT;
-			break;
-		case NEUTRAL:
-			break;
-		}
-		*/
 		return myMove;
 		
 	}
@@ -121,7 +113,7 @@ public class MyPacMan extends Controller<MOVE>
 		GHOST minGhost=null;		
 		
 		for(GHOST ghost : GHOST.values())
-			if(game.getGhostEdibleTime(ghost)>0)
+			if(game.getGhostEdibleTime(ghost)>2)
 			{
 				int distance=game.getShortestPathDistance(posMsPacman,game.getGhostCurrentNodeIndex(ghost));
 				if(distance<minDistance)
@@ -133,9 +125,26 @@ public class MyPacMan extends Controller<MOVE>
 		return minGhost;
 	}
 	
-	private MOVE chaseTheGhost(Game game, int posMsPacman, GHOST ghost) {
-		return game.getNextMoveTowardsTarget(game.getPacmanCurrentNodeIndex(),game.getGhostCurrentNodeIndex(ghost),DM.PATH);
+	private MOVE chaseTheGhost(Game game, int posMsPacman, GHOST edibleGhost) {
+		int d = 1000000;
+		// search for the nearest non edible ghost
+		GHOST nonEdibleGhost = null;
+		for(GHOST g : GHOST.values()) {
+			if(game.getGhostEdibleTime(g)<=0 && game.getShortestPathDistance(posMsPacman,game.getGhostCurrentNodeIndex(g)) < d ||
+			        game.getShortestPathDistance(posMsPacman, game.getGhostCurrentNodeIndex(edibleGhost)) < minDistance) {
+				d = game.getShortestPathDistance(posMsPacman,game.getGhostCurrentNodeIndex(g));
+				nonEdibleGhost = g;
+			}
+		}
+		if(nonEdibleGhost != null && d < game.getShortestPathDistance(posMsPacman, game.getGhostCurrentNodeIndex(edibleGhost))) {
+			//System.out.println("Panic");
+			return game.getNextMoveAwayFromTarget(posMsPacman, game.getGhostCurrentNodeIndex(nonEdibleGhost), DM.PATH);
+		}
+		else
+			return game.getNextMoveTowardsTarget(game.getPacmanCurrentNodeIndex(),game.getGhostCurrentNodeIndex(edibleGhost),DM.PATH);
 	}
+	
+	
 	
 	/**
 	 * Retrieves sensor information for MsPacman agent
@@ -148,7 +157,7 @@ public class MyPacMan extends Controller<MOVE>
 		distances[0] = weightedGhostsDistance(game, posMsPacman);
 		distances[1] = nearestPillDistance(game, posMsPacman, true);
 		distances[2] = nearestPillDistance(game, posMsPacman, false);
-		/*
+		
 		try {
 			this.averageGhostDistance.write(distances[0]+"\n");
 			this.pillDistance.write(distances[1]+"\n");
@@ -157,7 +166,7 @@ public class MyPacMan extends Controller<MOVE>
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		*/
+		
 		return distances;
 	}
 	
@@ -191,20 +200,40 @@ public class MyPacMan extends Controller<MOVE>
 	 * @return distance from the nearest power pill or simple pill
 	 */
 	private int nearestPillDistance(Game game, int posMsPacman, boolean isPowerPill) {
-		int pillIndices[], minDistance = 100000;
+		int[] pillIndices, targetsArray;
+		ArrayList<Integer> targets=new ArrayList<Integer>();
 		boolean isPillActive[];
 		int i = 0;
 		if(isPowerPill) {
-			pillIndices = game.getActivePowerPillsIndices();
+			pillIndices = game.getPillIndices();
+			for(i=0;i<pillIndices.length;i++)					//check which pills are available			
+				if(game.isPillStillAvailable(i))
+					targets.add(pillIndices[i]);
+			targetsArray=new int[targets.size()];
+			for(i=0;i<targetsArray.length;i++)
+				targetsArray[i]=targets.get(i);
 		}
 		else {
-			pillIndices = game.getActivePillsIndices();
+			pillIndices = game.getPowerPillIndices();
+			for(i=0;i<pillIndices.length;i++)			//check with power pills are available
+				if(game.isPowerPillStillAvailable(i))
+					targets.add(pillIndices[i]);	
+			targetsArray=new int[targets.size()];
+			for(i=0;i<targetsArray.length;i++)
+				targetsArray[i]=targets.get(i);
 		}
-		for(i = 0; i < pillIndices.length; i++) {
-			if(game.getShortestPathDistance(posMsPacman, pillIndices[i]) < minDistance)
-				minDistance = game.getShortestPathDistance(posMsPacman, pillIndices[i]);
-		}
-		return minDistance;
+		return game.getShortestPathDistance(posMsPacman, game.getClosestNodeIndexFromNodeIndex(posMsPacman,targetsArray,DM.PATH));
+//		if(isPowerPill) {
+//			pillIndices = game.getActivePowerPillsIndices();
+//		}
+//		else {
+//			pillIndices = game.getActivePillsIndices();
+//		}
+//		for(i = 0; i < pillIndices.length; i++) {
+//			if(game.getShortestPathDistance(posMsPacman, pillIndices[i]) < minDistance)
+//				minDistance = game.getShortestPathDistance(posMsPacman, pillIndices[i]);
+//		}
+		//return minDistance;
 	}
 	
 	/**
@@ -215,7 +244,7 @@ public class MyPacMan extends Controller<MOVE>
 	 * @return utility value
 	 */
 	private double utility0(float[] distances, float[] hypParam) {
-		return Math.pow(distances[0], hypParam[0]) + Math.pow(distances[1], hypParam[1]) + Math.pow(distances[2], -hypParam[2]);
+		return Math.pow(distances[0], hypParam[0]) + Math.pow(distances[1], hypParam[1]) + Math.pow((distances[2])/10,hypParam[2]);
 	}
 	
 	/**
@@ -226,6 +255,7 @@ public class MyPacMan extends Controller<MOVE>
 	 * @return utility value
 	 */
 	private double utility1(float[] distances, float[] hypParam) {
-		return hypParam[0]*(1/distances[0]) + Math.pow(distances[1], -hypParam[1]) + Math.pow(distances[2], -hypParam[2]);
+		double eps = 0.001;
+		return Math.pow(distances[0], hypParam[0]) + Math.pow(distances[1]+eps, -hypParam[1]) + Math.pow(distances[2]+eps, -hypParam[2]);
 	}
 }
