@@ -158,15 +158,15 @@ public class MyPacMan extends Controller<MOVE>
 		distances[1] = nearestPillDistance(game, posMsPacman, true);
 		distances[2] = nearestPillDistance(game, posMsPacman, false);
 		
-		try {
-			this.averageGhostDistance.write(distances[0]+"\n");
-			this.pillDistance.write(distances[1]+"\n");
-			this.powerPillDistance.write(distances[2]+"\n");
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
+//		try {
+//			this.averageGhostDistance.write(distances[0]+"\n");
+//			this.pillDistance.write(distances[1]+"\n");
+//			this.powerPillDistance.write(distances[2]+"\n");
+//		} catch (IOException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
+//		
 		return distances;
 	}
 	
@@ -200,29 +200,28 @@ public class MyPacMan extends Controller<MOVE>
 	 * @return distance from the nearest power pill or simple pill
 	 */
 	private int nearestPillDistance(Game game, int posMsPacman, boolean isPowerPill) {
-		int[] pillIndices, targetsArray;
+		int[] pills=game.getPillIndices();
+		int[] powerPills=game.getPowerPillIndices();		
+		
 		ArrayList<Integer> targets=new ArrayList<Integer>();
-		boolean isPillActive[];
-		int i = 0;
-		if(isPowerPill) {
-			pillIndices = game.getPillIndices();
-			for(i=0;i<pillIndices.length;i++)					//check which pills are available			
-				if(game.isPillStillAvailable(i))
-					targets.add(pillIndices[i]);
-			targetsArray=new int[targets.size()];
-			for(i=0;i<targetsArray.length;i++)
-				targetsArray[i]=targets.get(i);
-		}
-		else {
-			pillIndices = game.getPowerPillIndices();
-			for(i=0;i<pillIndices.length;i++)			//check with power pills are available
-				if(game.isPowerPillStillAvailable(i))
-					targets.add(pillIndices[i]);	
-			targetsArray=new int[targets.size()];
-			for(i=0;i<targetsArray.length;i++)
-				targetsArray[i]=targets.get(i);
-		}
-		return game.getShortestPathDistance(posMsPacman, game.getClosestNodeIndexFromNodeIndex(posMsPacman,targetsArray,DM.PATH));
+		
+		for(int i=0;i<pills.length;i++)					//check which pills are available			
+			if(game.isPillStillAvailable(i))
+				targets.add(pills[i]);
+		
+		for(int i=0;i<powerPills.length;i++)			//check with power pills are available
+			if(game.isPowerPillStillAvailable(i))
+				targets.add(powerPills[i]);				
+		
+		int[] targetsArray=new int[targets.size()];		//convert from ArrayList to array
+		
+		for(int i=0;i<targetsArray.length;i++)
+			targetsArray[i]=targets.get(i);
+//		for(i=0;i<targetsArray.length;i++)
+//			System.out.println(targetsArray[i]);
+		//System.out.println(game.getClosestNodeIndexFromNodeIndex(posMsPacman,targetsArray,DM.PATH));
+		return game.getShortestPathDistance(game.getPacmanCurrentNodeIndex(), 
+				game.getClosestNodeIndexFromNodeIndex(game.getPacmanCurrentNodeIndex(),targetsArray,DM.PATH));
 //		if(isPowerPill) {
 //			pillIndices = game.getActivePowerPillsIndices();
 //		}
@@ -233,7 +232,7 @@ public class MyPacMan extends Controller<MOVE>
 //			if(game.getShortestPathDistance(posMsPacman, pillIndices[i]) < minDistance)
 //				minDistance = game.getShortestPathDistance(posMsPacman, pillIndices[i]);
 //		}
-		//return minDistance;
+//		return minDistance;
 	}
 	
 	/**
@@ -244,7 +243,8 @@ public class MyPacMan extends Controller<MOVE>
 	 * @return utility value
 	 */
 	private double utility0(float[] distances, float[] hypParam) {
-		return Math.pow(distances[0], hypParam[0]) + Math.pow(distances[1], hypParam[1]) + Math.pow((distances[2])/10,hypParam[2]);
+		double eps = 0.001;
+		return 1-Math.exp(-hypParam[0]*distances[0]) + 1-Math.exp(-hypParam[1]*distances[1]) + Math.exp(-hypParam[2]*distances[2]);
 	}
 	
 	/**
@@ -256,6 +256,6 @@ public class MyPacMan extends Controller<MOVE>
 	 */
 	private double utility1(float[] distances, float[] hypParam) {
 		double eps = 0.001;
-		return Math.pow(distances[0], hypParam[0]) + Math.pow(distances[1]+eps, -hypParam[1]) + Math.pow(distances[2]+eps, -hypParam[2]);
+		return 1-Math.exp(-hypParam[0]*distances[0]) + Math.exp(-hypParam[1]*distances[1]) + 1-Math.exp(-hypParam[2]*distances[2]);
 	}
 }
