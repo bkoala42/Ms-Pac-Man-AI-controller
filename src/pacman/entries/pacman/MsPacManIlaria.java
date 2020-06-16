@@ -86,20 +86,27 @@ public class MsPacManIlaria extends Controller<MOVE>
 	private Double heuristic0(Game game, int pos) {
 		Double cumulativePoints = 0.0;
 		boolean safe = true;
+		
+		
 		// 10 points for each ghost far that is not watching towards pacman because they are going away
 		// else it is risky because they are approaching
-		for(GHOST ghost : GHOST.values())
-			if(game.getGhostEdibleTime(ghost)==0 && game.getGhostLairTime(ghost)==0)
-				if(game.getShortestPathDistance(game.getGhostCurrentNodeIndex(ghost), pos) >= MIN_DISTANCE)
-					cumulativePoints += 10;
-				else {
-					// penalty if one is too close
-					cumulativePoints -= 400;
-					safe = false;
-				}
-//			else if (game.getGhostLairTime(ghost)==0)
-//			// if ghost are still in the lair 
-//				cumulativePoints += 100;
+//		for(GHOST ghost : GHOST.values()) {
+//			if(game.getGhostEdibleTime(ghost)==0 && game.getGhostLairTime(ghost)==0) { //uncomment this when the edible part is implemented
+////			if(game.getGhostLairTime(ghost)==0) {
+//				if(game.getShortestPathDistance(game.getGhostCurrentNodeIndex(ghost), pos) >= MIN_DISTANCE) {
+//					System.out.println("Ghost far: " + ghost.name());
+//					cumulativePoints += 10;
+//				}
+//				else {
+//					// penalty if one is too close
+//					cumulativePoints -= 100;
+////					safe = false;
+//				}
+//			}
+////			else if (game.getGhostLairTime(ghost)==0)
+////			// if ghost are still in the lair 
+////				cumulativePoints += 100;
+//		}
 		
 		
 		if(safe) {
@@ -116,57 +123,72 @@ public class MsPacManIlaria extends Controller<MOVE>
 		
 		for(int i=0;i<targetsArray.length;i++)
 			targetsArray[i]=targets.get(i);
-		if(targetsArray.length != 0)
-		{
-			// careful! there might be that the closest pill is next to a power pill and we don't want to eat them in heuristic0
-			// avoid that path
-			boolean goodPath = true; // assuming it is true
-			int[] path = game.getShortestPath(pos, game.getClosestNodeIndexFromNodeIndex(pos,targetsArray,DM.PATH));
-			for(int elem : path) {
-				if(game.getPowerPillIndex(elem) != -1) {
-					// there is a powerpill in the path and it is elem
-					// great penalty for this move
-					cumulativePoints -= 400;
-					goodPath = false;
-				}
-			}
-			if(goodPath) {
-				cumulativePoints += 100;
+		
+//		if(targetsArray.length != 0)
+//		{
+//			// careful! there might be that the closest pill is next to a power pill and we don't want to eat them in heuristic0
+//			// avoid that path
+//			boolean goodPath = true; // assuming it is true
+////			int[] path = game.getShortestPath(pos, game.getClosestNodeIndexFromNodeIndex(pos,targetsArray,DM.PATH));
+////			for(int elem : path) {
+////				if(game.getPowerPillIndex(elem) != -1) {
+////					// there is a powerpill in the path and it is elem
+////					// great penalty for this move
+////					cumulativePoints -= 400;
+////					goodPath = false;
+////				}
+////			}
+//			if(goodPath) {
+//				cumulativePoints += 30;
 //				// closest pills have higher utility
-//				int minDist = game.getShortestPathDistance(pos, game.getClosestNodeIndexFromNodeIndex(pos,targetsArray,DM.PATH));
-//				if(minDist>=0 && minDist <=5) {
-//									
-//					cumulativePoints += 100;
+//				int current = game.getPacmanCurrentNodeIndex();
+//				int minDist = game.getShortestPathDistance(current, game.getClosestNodeIndexFromNodeIndex(current,targetsArray,DM.PATH));
+//				if(minDist>=0 && minDist <2) {
+////					System.out.println("pill vicinoo");				
+//					cumulativePoints += 10;
 //				}
 //				else
 //				{
-//					System.out.println("pill lontano");
-//					cumulativePoints += 10;
+////					System.out.println("pill lontano");
+//					cumulativePoints += 1;
 //				}
-			}
-			
-		}
+//			}
+//			
+//		}
+		System.out.println("junction?: " + game.isJunction(game.getPacmanCurrentNodeIndex()));
+		
+		// neighbouring nodes wrt last move made acquire higher utility
+		// the objective is to clear one area first if ms pacman is safe
+		int[] neighbouringPills = game.getNeighbouringNodes(game.getClosestNodeIndexFromNodeIndex(game.getPacmanCurrentNodeIndex(),targetsArray,DM.PATH));
+		// se la mossa mi avvicina a dei pill nel vicinato acquista utilità
+		if(game.getShortestPathDistance(game.getPacmanCurrentNodeIndex(), game.getClosestNodeIndexFromNodeIndex(pos,neighbouringPills,DM.PATH)) > 
+			game.getShortestPathDistance(pos, game.getClosestNodeIndexFromNodeIndex(pos,neighbouringPills,DM.PATH)))
+			cumulativePoints += 50;
+		
+		
 		
 		// penalty for taking power pill
-		targets.clear();
-		int[] powerPills=game.getPowerPillIndices(); // indices of the maze, 97,102 etc
+//		targets.clear();
+//		int[] powerPills=game.getPowerPillIndices(); // indices of the maze, 97,102 etc
+//		
+//		for(int i=0;i<powerPills.length;i++)			//check with power pills are available
+//			if(game.isPowerPillStillAvailable(i))
+//				targets.add(powerPills[i]);	
+//		
+//		int[] targetsArray2=new int[targets.size()];		//convert from ArrayList to array
+//		
+//		for(int i=0;i<targetsArray2.length;i++)
+//			targetsArray2[i]=targets.get(i);
+//		// if the next move implies eating a power pill, great penalty
+//		if (targetsArray2.length != 0 && game.getShortestPathDistance(pos, game.getClosestNodeIndexFromNodeIndex(pos,targetsArray2,DM.PATH)) <=5)
+//		{
+//			System.out.println("cieooo");
+//			cumulativePoints -= 100;
+//			
+//		}
 		
-		for(int i=0;i<powerPills.length;i++)			//check with power pills are available
-			if(game.isPowerPillStillAvailable(i))
-				targets.add(powerPills[i]);	
-		
-		int[] targetsArray2=new int[targets.size()];		//convert from ArrayList to array
-		
-		for(int i=0;i<targetsArray2.length;i++)
-			targetsArray2[i]=targets.get(i);
-		// if the next move implies eating a power pill, great penalty
-		if (targetsArray2.length != 0 && game.getShortestPathDistance(pos, game.getClosestNodeIndexFromNodeIndex(pos,targetsArray2,DM.PATH)) <=5)
-		{
-			System.out.println("cieooo");
-			cumulativePoints -= 500;
-			
-		}
-		else {
+		// **********************
+//		else {
 //			// there may be that the closest pill is the one near the power pill
 //			// we need a shortcut to go to the closest pill
 //			// so get the path from the pos to the pill, if it includes a power pill avoid it
@@ -205,7 +227,8 @@ public class MsPacManIlaria extends Controller<MOVE>
 //				goodPath = true;
 //				System.out.println("Path buono");
 //			}
-		}
+//		}
+		// **********************
 		}
 		
 		
@@ -220,11 +243,11 @@ public class MsPacManIlaria extends Controller<MOVE>
 	private Double heuristic1(Game game, int pos) {
 		Double cumulativePoints = 0.0;
 		
-		// if the next move allow me to escape from all ghosts gain utility
+		// if the next move allow me to escape from non edible and close ghosts gain utility
 		for(GHOST ghost : GHOST.values()) {
-			if(game.getGhostEdibleTime(ghost)==0 && game.getGhostLairTime(ghost)==0) {
-				if(game.getShortestPathDistance(game.getGhostCurrentNodeIndex(ghost), game.getPacmanCurrentNodeIndex()) < MIN_DISTANCE) {
-					System.out.println("fin qui tutto ok");
+			if(game.getGhostEdibleTime(ghost)==0 && game.getGhostLairTime(ghost)==0) { // check if edible and not in lair
+				if(game.getShortestPathDistance(game.getGhostCurrentNodeIndex(ghost), game.getPacmanCurrentNodeIndex()) < MIN_DISTANCE) { // check if close
+					System.out.println("Valutazione mossa se mi avvicina o meno al ghost vicino");
 					if(game.getShortestPathDistance(game.getGhostCurrentNodeIndex(ghost), pos) > 
 						game.getShortestPathDistance(game.getGhostCurrentNodeIndex(ghost), game.getPacmanCurrentNodeIndex()))
 					{
@@ -238,32 +261,36 @@ public class MsPacManIlaria extends Controller<MOVE>
 			}
 		}
 		
+		// pills
+		// still is a gain eating pills 
+		int[] pills=game.getPillIndices();		
+		
+		ArrayList<Integer> targets=new ArrayList<Integer>();
+		
+		for(int i=0;i<pills.length;i++)					//check which pills are available			
+			if(game.isPillStillAvailable(i))
+				targets.add(pills[i]);				
+			
+		int[] targetsArray=new int[targets.size()];		//convert from ArrayList to array
+		
+		for(int i=0;i<targetsArray.length;i++)
+			targetsArray[i]=targets.get(i);
+		
+		int minDist = game.getShortestPathDistance(pos, game.getClosestNodeIndexFromNodeIndex(pos,targetsArray,DM.PATH));
+		if(minDist <2) {
+			cumulativePoints += 10;
+		}
+		else {
+			cumulativePoints += 1;
+		}
+
 //		System.out.println("bbbb: " + cumulativePoints);
 		
 		// if the ghosts get closer try to eat a power pill
 		// this means that none of my moves get me further away from the ghosts
 		// so cumulativePoints up to now is negative
 		if(cumulativePoints <= 0)
-		{
-			// still is a gain eating pills 
-			int[] pills=game.getPillIndices();		
-			
-			ArrayList<Integer> targets=new ArrayList<Integer>();
-			
-			for(int i=0;i<pills.length;i++)					//check which pills are available			
-				if(game.isPillStillAvailable(i))
-					targets.add(pills[i]);				
-				
-			int[] targetsArray=new int[targets.size()];		//convert from ArrayList to array
-			
-			for(int i=0;i<targetsArray.length;i++)
-				targetsArray[i]=targets.get(i);
-			
-			int minDist = game.getShortestPathDistance(pos, game.getClosestNodeIndexFromNodeIndex(pos,targetsArray,DM.PATH));
-			if(minDist <5) {
-				cumulativePoints += 10;
-			}
-			
+		{			
 			// great utility in eating the powerpill
 			targets.clear();
 			int[] powerPills=game.getPowerPillIndices();
@@ -279,6 +306,10 @@ public class MsPacManIlaria extends Controller<MOVE>
 			// if the next move implies eating a power pill, great gain
 			if (targetsArray2.length != 0 && game.getShortestPathDistance(pos, game.getClosestNodeIndexFromNodeIndex(pos,targetsArray2,DM.PATH)) <=1)
 				cumulativePoints += 500;
+			// if the next move makes msPacman closer to a power pill, gain utility
+				if (game.getShortestPathDistance(pos, game.getClosestNodeIndexFromNodeIndex(pos,targetsArray,DM.PATH)) <
+						game.getShortestPathDistance(game.getPacmanCurrentNodeIndex(), game.getClosestNodeIndexFromNodeIndex(pos,targetsArray,DM.PATH)))
+					cumulativePoints += 100;
 			
 			// only if ghosts are very close like aggressive
 //			for(GHOST ghost : GHOST.values())
@@ -294,30 +325,30 @@ public class MsPacManIlaria extends Controller<MOVE>
 		}
 			
 		//chase ghosts
-		int minDistance=Integer.MAX_VALUE;
-		GHOST minGhost=null;		
-		
-		for(GHOST ghost : GHOST.values())
-			if(game.getGhostEdibleTime(ghost)>0)
-			{
-//				System.out.println(game.getGhostEdibleTime(ghost));
-				int distance=game.getShortestPathDistance(pos,game.getGhostCurrentNodeIndex(ghost));
-				
-				if(distance<minDistance)
-				{
-					minDistance=distance;
-					minGhost=ghost;
-				}
-			}
-			// but if pacman is too far to eat and the time gets short, run away
-			else if(game.getGhostEdibleTime(ghost)<50 && game.getShortestPathDistance(pos,game.getGhostCurrentNodeIndex(ghost)) <=2)
-			{
-				minGhost = null;
-//				cumulativePoints -= 100;
-			}
-		if(minGhost!=null)	//we found an edible ghost
-			// this is the closest ghost to eat
-			cumulativePoints += 100;
+//		int minDistance=Integer.MAX_VALUE;
+//		GHOST minGhost=null;		
+//		
+//		for(GHOST ghost : GHOST.values())
+//			if(game.getGhostEdibleTime(ghost)>0)
+//			{
+////				System.out.println(game.getGhostEdibleTime(ghost));
+//				int distance=game.getShortestPathDistance(pos,game.getGhostCurrentNodeIndex(ghost));
+//				
+//				if(distance<minDistance)
+//				{
+//					minDistance=distance;
+//					minGhost=ghost;
+//				}
+//			}
+////			// but if pacman is too far to eat and the time gets short, run away
+////			else if(game.getGhostEdibleTime(ghost)<50 && game.getShortestPathDistance(pos,game.getGhostCurrentNodeIndex(ghost)) <=2)
+////			{
+////				minGhost = null;
+//////				cumulativePoints -= 100;
+////			}
+//		if(minGhost!=null)	//we found an edible ghost
+//			// this is the closest ghost to eat
+//			cumulativePoints += 100;
 		
 		
 		return cumulativePoints;
