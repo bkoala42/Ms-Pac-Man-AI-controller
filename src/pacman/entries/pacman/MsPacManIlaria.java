@@ -23,6 +23,7 @@ public class MsPacManIlaria extends Controller<MOVE>
 	
 	public MOVE getMove(Game game, long timeDue) 
 	{
+		long startTime = java.lang.System.currentTimeMillis();
 		int posMsPacman=game.getPacmanCurrentNodeIndex();	
 		
 //		System.out.println(game.getPacmanNumberOfLivesRemaining());
@@ -30,57 +31,58 @@ public class MsPacManIlaria extends Controller<MOVE>
 		myMove = MOVE.NEUTRAL;
 		int newPosMsPacman = -1;
 		MOVE moves[] = game.getPossibleMoves(posMsPacman);
-		Double[] utility0 = new Double[moves.length];
-		Double[] utility1 = new Double[moves.length];
+		int utility0[] = new int[2];
+		int utility1[] = new int[2];
+		
+		utility0 = heuristic0(game, moves);		
+		utility1 = heuristic1(game, moves);
 
-		int i = 0;
-		for(MOVE move : moves) {
-			newPosMsPacman = game.getNeighbour(posMsPacman, move);
-			if(newPosMsPacman != -1) {
-				utility0[i] = heuristic0(game, newPosMsPacman, move);
-				utility1[i] = heuristic1(game, newPosMsPacman, move);
-			}
-			i +=1;
+//		int i = 0;
+//		for(MOVE move : moves) {
+//			newPosMsPacman = game.getNeighbour(posMsPacman, move);
+//			if(newPosMsPacman != -1) {
+////				utility0[i] = heuristic0(game, newPosMsPacman, move);
+//				utility1[i] = heuristic1(game, newPosMsPacman, move);
+//			}
+//			i +=1;
+//		}
+		
+		
+		
+//		int bestMoveIndex = 0;
+//		double max0 = Collections.max(Arrays.asList(utility0));
+//		double max1 = Collections.max(Arrays.asList(utility1));
+//		if(max0>max1) {
+//			for(int j=0; j < moves.length; j++) {
+//				if(utility0[j] == max0) {
+//					bestMoveIndex = j;
+////					System.out.println("heur0 won " + max0 + " " + max1);
+//					break;
+//				}
+//			}
+//		}
+//		else 
+//		{
+//			for(int j=0; j < moves.length; j++) {
+//				if(utility1[j] == max1) {
+//					bestMoveIndex = j;
+////					System.out.println("heur1 won " + max0 + " " + max1);
+//					break;
+//				}
+//			}
+//		}
+		
+		if(utility0[0] > utility1[0]) {
+			System.out.println("heur0 won " + utility0[0] + " move: " + moves[utility0[1]]);
+			myMove = moves[utility0[1]];
 		}
-		
-		// prints for debug
-//		System.out.print("heur0: ");
-//		for(int x=0; x<moves.length; x++)
-//			System.out.print(utility0[x] + " ");
-//		System.out.println();
-		
-//		System.out.print("heur1: ");
-//		for(int x=0; x<moves.length; x++)
-//			System.out.print(utility1[x] + " ");
-//		System.out.println();
-		
-		
-		int bestMoveIndex = 0;
-		double max0 = Collections.max(Arrays.asList(utility0));
-		double max1 = Collections.max(Arrays.asList(utility1));
-		if(max0>max1) {
-			for(int j=0; j < moves.length; j++) {
-				if(utility0[j] == max0) {
-					bestMoveIndex = j;
-					System.out.println("heur0 won " + max0 + " " + max1);
-					break;
-				}
-			}
-		}
-		else 
-		{
-			for(int j=0; j < moves.length; j++) {
-				if(utility1[j] == max1) {
-					bestMoveIndex = j;
-					System.out.println("heur1 won " + max0 + " " + max1);
-					break;
-				}
-			}
+		else {
+			System.out.println("heur1 won " + utility0[0] + " move: " + moves[utility0[1]]);
+			myMove = moves[utility1[1]];
 		}
 
-		myMove = moves[bestMoveIndex];
 		
-					
+//		System.out.println("Time: " + (java.lang.System.currentTimeMillis() - startTime));
 		return myMove;
 	}
 	
@@ -95,164 +97,205 @@ public class MsPacManIlaria extends Controller<MOVE>
 	// junctions and then estimate a safe one. From the junction, Ms Pacman must be able to reach a 
 	// power pill with her ShortestPath before any ghost
 	
-	private Double heuristic0(Game game, int pos, MOVE move) {
-		Double cumulativePoints = 0.0;
+	private int[] heuristic0(Game game, MOVE[] moves) {
 		int current = game.getPacmanCurrentNodeIndex();
+		int pos = 0;
+		int m = 0;
+		int[] returnValues = new int[2];
+		int bestMove = -1, shortestDist = 10000000;
+		int[] cumulativePoints = new int[moves.length];
 		
-		// if all ghosts are in the Lair move towards the farthest pill apart from lair
-		boolean areAllGhostInLair = true;
-		for(GHOST ghost : GHOST.values()) { 
-			if(game.getGhostLairTime(ghost)==0) {
-				areAllGhostInLair = false;
+		// evaluate for each move
+		for(MOVE move : moves) {
+			pos = game.getNeighbour(current, move);
+		
+			// if all ghosts are in the Lair move towards the farthest pill apart from lair
+			boolean areAllGhostInLair = true;
+			for(GHOST ghost : GHOST.values()) { 
+				if(game.getGhostLairTime(ghost)==0) {
+					areAllGhostInLair = false;
+				}
 			}
-		}
-		if(areAllGhostInLair) {
-			// if ghosts are still in Lair start to eat pills far from the Lair
-			if(move == game.getNextMoveAwayFromTarget(current, game.getCurrentMaze().lairNodeIndex, DM.PATH))
-			{
-				cumulativePoints += 200;
-				GameView.addPoints(game,Color.cyan, game.getShortestPath(current, pos));
-				return cumulativePoints;
+			if(areAllGhostInLair) {
+				// if ghosts are still in Lair start to eat pills far from the Lair
+				if(move == game.getNextMoveAwayFromTarget(current, game.getCurrentMaze().lairNodeIndex, DM.PATH))
+				{
+					cumulativePoints[m] += 200;
+					GameView.addPoints(game,Color.cyan, game.getShortestPath(current, pos));
+					returnValues[0] = cumulativePoints[m];
+					returnValues[1] = m;
+					return returnValues;
+				}
 			}
-		}
 	
 		
-		// calculate an A* to predict the path of the ghost
-		// check that there is a pill that mspacman can approach without being closed by any ghost
-		// check that from that pill there is always a shortest path to a power pill that mspacman can
-		// reach before any ghost if they chase
-		
-		int[] pills=game.getActivePillsIndices();		
-		ArrayList<Integer> targets=new ArrayList<Integer>();
-		
-		for(int i=0;i<pills.length;i++)					//check which pills are available			
-//			if(game.isPillStillAvailable(i))			// if commented ALL POSITIONS CONSIDERED
-				targets.add(pills[i]);				
+			// calculate an A* to predict the path of the ghost
+			// check that there is a pill that mspacman can approach without being closed by any ghost
+			// check that from that pill there is always a shortest path to a power pill that mspacman can
+			// reach before any ghost if they chase
 			
-		int[] targetsArray=new int[targets.size()];		
-		for(int i=0;i<targetsArray.length;i++)
-			targetsArray[i]=targets.get(i);
-		
-		
-		
-		int i = 0;
-		int[][] pathGhosts = new int[4][];
-		for(GHOST ghost : GHOST.values()) { 
-			if(game.getGhostEdibleTime(ghost)==0 && game.getGhostLairTime(ghost)==0) {
-				pathGhosts[i] = game.getShortestPath(game.getGhostCurrentNodeIndex(ghost), current, game.getGhostLastMoveMade(ghost));
-				GameView.addPoints(game, Color.red, pathGhosts[i]);
-				i++;
-			}
-		}
-		
-		int dist = 0;
-		int safeCloserPill = -1, safeClosestPill = -1, minDistance = 1000000;
-		int shortestDist = 10000000;
-		ArrayList<Integer> closeSafeJunction=new ArrayList<Integer>();
-		
-		if(targetsArray.length != 0 && !areAllGhostInLair) {
-			int[] neighbouringPills = game.getNeighbouringNodes(game.getClosestNodeIndexFromNodeIndex(current,targetsArray,DM.PATH));
-			if(neighbouringPills.length != 0) {
+			int[] pills=game.getPillIndices();		
+			ArrayList<Integer> targets=new ArrayList<Integer>();
+			
+			for(int i=0;i<pills.length;i++)					//check which pills are available			
+				if(game.isPillStillAvailable(i))			// if commented ALL POSITIONS CONSIDERED
+					targets.add(pills[i]);				
 				
-				for(int pill: targetsArray) {
-					dist = game.getShortestPathDistance(pos, pill); 
+			int[] targetsArray=new int[targets.size()];		
+			for(int i=0;i<targetsArray.length;i++)
+				targetsArray[i]=targets.get(i);
+			
+			
+			
+	//		int i = 0;
+	//		int[][] pathGhosts = new int[4][];
+	//		for(GHOST ghost : GHOST.values()) { 
+	//			if(game.getGhostEdibleTime(ghost)==0 && game.getGhostLairTime(ghost)==0) {
+	//				pathGhosts[i] = game.getShortestPath(game.getGhostCurrentNodeIndex(ghost), current, game.getGhostLastMoveMade(ghost));
+	//				GameView.addPoints(game, Color.red, pathGhosts[i]);
+	//				i++;
+	//			}
+	//		}
+			
+			int dist = 0;
+			int safeClosestPill = -1, minDistance = 1000000;
+			ArrayList<Integer> closeSafeJunction=new ArrayList<Integer>();
+			
+			if(targetsArray.length != 0 && !areAllGhostInLair) {
+				int[] neighbouringPills = game.getNeighbouringNodes(game.getClosestNodeIndexFromNodeIndex(current,targetsArray,DM.PATH));
+				if(neighbouringPills.length != 0) {
 					
-					int[] junctions = game.getJunctionIndices();
-					int[] safeJunctions = new int[junctions.length];
-					
-					int j=0;
-					
-					for(int junct : junctions) {
-//						GameView.addPoints(game,Color.pink, junct);
+					for(int pill: targetsArray) {
 						
-						boolean safeJunct = true;
+						int[] junctions = game.getJunctionIndices();
+						int[] safeJunctions = new int[junctions.length];
 						
-						// Judgement of the goodness of the junction
-						for(GHOST ghost : GHOST.values()) { 
-							if(game.getGhostEdibleTime(ghost)==0 && game.getGhostLairTime(ghost)==0) {
-								
-								if(dist+game.getShortestPathDistance(pill, junct)+GUARD_DISTANCE > // if Ms Pacman DOESN'T reaches the junction before a ghost
-								game.getShortestPathDistance(game.getGhostCurrentNodeIndex(ghost), junct)) {
-									safeJunct = false;
-								}
-								else {
-									int[] path = game.getShortestPath(pill, junct);
-									for(int elem: path) {
-										// check if in the path there is a ghost
-										for(GHOST ghost2 : GHOST.values()) {
-											if(elem == game.getGhostCurrentNodeIndex(ghost2)) {
-												safeJunct = false;
+						int j=0;
+						
+						for(int junct : junctions) {
+//							GameView.addPoints(game,Color.pink, junct);
+							
+							boolean safeJunct = true;
+							dist = game.getShortestPathDistance(pos, pill); 
+							
+							// Judgement of the goodness of the junction
+							for(GHOST ghost : GHOST.values()) { 
+								if(game.getGhostEdibleTime(ghost)==0 && game.getGhostLairTime(ghost)==0) {
+									
+									if(dist+game.getShortestPathDistance(pill, junct)+GUARD_DISTANCE > // if Ms Pacman DOESN'T reaches the junction before a ghost
+									game.getShortestPathDistance(game.getGhostCurrentNodeIndex(ghost), junct, game.getGhostLastMoveMade(ghost))) {
+										safeJunct = false;
+									}
+									else {
+										int[] path = game.getShortestPath(pos, junct);
+										for(int elem: path) {
+											// check if in the path there is a ghost
+											for(GHOST ghost2 : GHOST.values()) {
+												if(elem == game.getGhostCurrentNodeIndex(ghost2)) {
+													safeJunct = false;
+												}
 											}
+											// ATTENZIONE PER IL MOMENTO LASCIAMO PERDERE
+	//										// check if in the path there is a power pill
+	//										if(game.getPowerPillIndex(elem) != -1 && game.isPowerPillStillAvailable(game.getPowerPillIndex(elem))) {
+	//											// there is a powerpill in the path and it is elem
+	//											System.out.println("weeeee");
+	//											safeJunct = false;
+	//										}
 										}
-										// ATTENZIONE PER IL MOMENTO LASCIAMO PERDERE
-//										// check if in the path there is a power pill
-//										if(game.getPowerPillIndex(elem) != -1 && game.isPowerPillStillAvailable(game.getPowerPillIndex(elem))) {
-//											// there is a powerpill in the path and it is elem
-//											System.out.println("weeeee");
-//											safeJunct = false;
-//										}
 									}
 								}
 							}
+							if(safeJunct) {
+	//							// it's safe
+								safeJunctions[j] = junct;
+								j++;
+							}
 						}
-						if(safeJunct) {
-//							// it's safe
-							safeJunctions[j] = junct;
-							j++;
-						}
-					}
-					//PEZZA
-					//there is a problem in Java the array is initialized but not completely filled, it is filled up to j
-					
-					int[] realSafeJunctions = new int[j];
-					for(int k=0; k<j; k++) {
-						realSafeJunctions[k] = safeJunctions[k];
-					}
-					GameView.addPoints(game,Color.magenta, realSafeJunctions);
+						//PEZZA
+						//there is a problem in Java the array is initialized but not completely filled, it is filled up to j
+						
+							int[] realSafeJunctions = new int[j+1];
+							int o = 0;
+							for(int k=0; k<safeJunctions.length; k++) {
+								if( safeJunctions[k] != 0) {
+									realSafeJunctions[o] = safeJunctions[k];
+									o++;
+								}
+							}
+//							System.out.println("j: " + j + " o: " + o);
+						
+						GameView.addPoints(game,Color.magenta, safeJunctions);
+		
+						
+						closeSafeJunction=new ArrayList<Integer>();
 	
-					
-					closeSafeJunction=new ArrayList<Integer>();
-
-//					// choose the pill nearest to pacman
-					// if at least 2 escapes exists around pacman
-					// NB PROBABLY BROKEN
-//					for(int node: realSafeJunctions) {
-//						for(int nodeOth: realSafeJunctions) {
-//							if(node != nodeOth) {
-//								int distanceJunc = Math.abs(node - nodeOth);
-//								int pacmanDist = game.getShortestPathDistance(current, node);
-//								if(distanceJunc < 40 && pacmanDist < 45) {
-//									GameView.addPoints(game,Color.white, node);
-//									closeSafeJunction.add(node);
+						// choose the pill nearest to pacman
+						//if at least 2 escapes exists around pacman
+						// NB PROBABLY BROKEN
+//						for(int node: realSafeJunctions) {
+//							for(int nodeOth: realSafeJunctions) {
+//								if(node != nodeOth) {
+//									int distanceJunc = Math.abs(node - nodeOth);
+//									int pacmanDist = game.getShortestPathDistance(current, node);
+//									if(distanceJunc < 40 && pacmanDist < 45) {
+//										GameView.addPoints(game,Color.white, node);
+//										closeSafeJunction.add(node);
+//									}
 //								}
 //							}
 //						}
-//					}
-					if(realSafeJunctions.length >1) {
-//						if(game.getPillIndex(pill) != -1) {
-							if(dist < minDistance) {
-								safeClosestPill = pill;
-								minDistance = dist;
-							}
+						
+//						System.out.println("n° of safe junctions: " + realSafeJunctions.length + " " +realSafeJunctions[0] + " " + safeJunctions[0]);
+						
+						if(safeJunctions.length > 0) {
+//							for(int i=0;i<pills.length;i++) {			//check if the pill is still available		
+//								if(pills[i] == pill) {
+//									if(game.isPillStillAvailable(i)) {
+										if(dist < minDistance) 
+										{
+											safeClosestPill = pill;
+											minDistance = dist;
+										}
+//									}
+//								}
+//							}
+						}
 					}
 				}
+				else {
+					System.out.println("(neighbouringPills.length == 0) ");
+				}
+				
+//				System.out.println("min distance pacman =  " + minDistance + " pill index: " + safeClosestPill + " move: " + move.toString());
+				
+				if(safeClosestPill != -1) {
+						GameView.addPoints(game,Color.green, game.getShortestPath(current, safeClosestPill));
+						cumulativePoints[m] += 50;
+				}
+				
+//				System.out.println(move.toString());
+	//			else {
+	//				System.out.println("boooooooo ");
+	//			}
 			}
-			else {
-				System.out.println("(neighbouringPills.length == 0) ");
-			}
-		}
-		System.out.println("min distance pacman =  " + minDistance + " pill index: " + safeClosestPill);
-		
-		if(safeClosestPill != -1) {
-				GameView.addPoints(game,Color.green, game.getShortestPath(current, safeClosestPill));
-				cumulativePoints += 50;
-		}
-//		else {
-//			System.out.println("boooooooo ");
-//		}
 
+			
+			// results for current move
+			// compare the distance of pacman to the pill
+			// the shortest one is the correct
+			if(minDistance < shortestDist) {
+				shortestDist = minDistance;
+				bestMove = m;
+			}
+			
+			m++;
+		} // end for moves
 		
+		returnValues[0] = cumulativePoints[bestMove];
+		returnValues[1] = bestMove;
 		
+		return returnValues;
 		
 
 		// points for each near pill
@@ -301,6 +344,8 @@ public class MsPacManIlaria extends Controller<MOVE>
 //			
 //		}
 //		System.out.println("junction?: " + game.isJunction(game.getPacmanCurrentNodeIndex()));
+		
+		
 		
 //		 neighbouring nodes wrt last move made acquire higher utility
 //		 the objective is to clear one area first if ms pacman is safe
@@ -413,8 +458,7 @@ public class MsPacManIlaria extends Controller<MOVE>
 		// **********************
 //		}
 		
-		
-		return cumulativePoints;
+	
 	}
 	
 	// Heuristics 1 -> run away from ghosts or try to eat them
@@ -422,9 +466,10 @@ public class MsPacManIlaria extends Controller<MOVE>
 	// up to X steps in the future, where X can be the distance between Ms Pacman and the ghost
 	// NB each ghost should be taken into account before deciding the move
 	// Astar path based on the current direction of the ghost, in case of crossing, the worst case is considered 
-	private Double heuristic1(Game game, int pos, MOVE move) {
-		Double cumulativePoints = 0.0;
+	private int[] heuristic1(Game game, MOVE[] moves) {
+		int cumulativePoints = 0;
 		boolean isMsPacManInDanger = true;
+		int[] returnValues = {cumulativePoints, 0};
 		
 		
 //		// escape from ghosts
@@ -614,7 +659,7 @@ public class MsPacManIlaria extends Controller<MOVE>
 ////		}
 //		
 		
-		return cumulativePoints;
+		return returnValues;
 	}
 	
 	private boolean checkSafeChase(GHOST minGhost, int minDistance, int pos, Game game) {
