@@ -19,7 +19,7 @@ public class MsPacManIlaria extends Controller<MOVE>
 {
 	private static final int MIN_DISTANCE=40;	//if a ghost is this close, run away
 	private MOVE myMove=MOVE.NEUTRAL;
-	private static final int GUARD_DISTANCE=3; // distance before getting eaten
+	private static final int GUARD_DISTANCE=10; // distance before getting eaten
 	
 	public MOVE getMove(Game game, long timeDue) 
 	{
@@ -104,6 +104,7 @@ public class MsPacManIlaria extends Controller<MOVE>
 		int[] returnValues = new int[2];
 		int bestMove = -1, shortestDist = 10000000;
 		int[] cumulativePoints = new int[moves.length];
+		ArrayList<Integer> moveSafeJunctions =new ArrayList<Integer>();
 		
 		// evaluate for each move
 		for(MOVE move : moves) {
@@ -138,7 +139,7 @@ public class MsPacManIlaria extends Controller<MOVE>
 			ArrayList<Integer> targets=new ArrayList<Integer>();
 			
 			for(int i=0;i<pills.length;i++)					//check which pills are available			
-				if(game.isPillStillAvailable(i))			// if commented ALL POSITIONS CONSIDERED
+//				if(game.isPillStillAvailable(i))			// if commented ALL POSITIONS CONSIDERED
 					targets.add(pills[i]);				
 				
 			int[] targetsArray=new int[targets.size()];		
@@ -159,7 +160,8 @@ public class MsPacManIlaria extends Controller<MOVE>
 			
 			int dist = 0;
 			int safeClosestPill = -1, minDistance = 1000000;
-			ArrayList<Integer> closeSafeJunction=new ArrayList<Integer>();
+			ArrayList<Integer> realSafeJunction=new ArrayList<Integer>();
+			ArrayList<Integer> chosenNodeSafeJunctions =new ArrayList<Integer>();
 			
 			if(targetsArray.length != 0 && !areAllGhostInLair) {
 				int[] neighbouringPills = game.getNeighbouringNodes(game.getClosestNodeIndexFromNodeIndex(current,targetsArray,DM.PATH));
@@ -180,7 +182,7 @@ public class MsPacManIlaria extends Controller<MOVE>
 							
 							// Judgement of the goodness of the junction
 							for(GHOST ghost : GHOST.values()) { 
-								if(game.getGhostEdibleTime(ghost)==0 && game.getGhostLairTime(ghost)==0) {
+								if(game.getGhostEdibleTime(ghost)<30 && game.getGhostLairTime(ghost)==0) {
 									
 									if(dist+game.getShortestPathDistance(pill, junct)+GUARD_DISTANCE > // if Ms Pacman DOESN'T reaches the junction before a ghost
 									game.getShortestPathDistance(game.getGhostCurrentNodeIndex(ghost), junct, game.getGhostLastMoveMade(ghost))) {
@@ -212,54 +214,49 @@ public class MsPacManIlaria extends Controller<MOVE>
 								j++;
 							}
 						}
+						
 						//PEZZA
 						//there is a problem in Java the array is initialized but not completely filled, it is filled up to j
 						
-							int[] realSafeJunctions = new int[j+1];
-							int o = 0;
-							for(int k=0; k<safeJunctions.length; k++) {
-								if( safeJunctions[k] != 0) {
-									realSafeJunctions[o] = safeJunctions[k];
-									o++;
-								}
-							}
-//							System.out.println("j: " + j + " o: " + o);
-						
-						GameView.addPoints(game,Color.magenta, safeJunctions);
-		
-						
-						closeSafeJunction=new ArrayList<Integer>();
-	
-						// choose the pill nearest to pacman
-						//if at least 2 escapes exists around pacman
-						// NB PROBABLY BROKEN
-//						for(int node: realSafeJunctions) {
-//							for(int nodeOth: realSafeJunctions) {
-//								if(node != nodeOth) {
-//									int distanceJunc = Math.abs(node - nodeOth);
-//									int pacmanDist = game.getShortestPathDistance(current, node);
-//									if(distanceJunc < 40 && pacmanDist < 45) {
-//										GameView.addPoints(game,Color.white, node);
-//										closeSafeJunction.add(node);
-//									}
-//								}
+//						int[] realSafeJunctions = new int[j+1];
+//						int o = 0;
+//						for(int k=0; k<safeJunctions.length; k++) {
+//							if( safeJunctions[k] != 0) {
+//								realSafeJunctions[o] = safeJunctions[k];
+//								o++;
 //							}
 //						}
 						
-//						System.out.println("n° of safe junctions: " + realSafeJunctions.length + " " +realSafeJunctions[0] + " " + safeJunctions[0]);
+//						GameView.addPoints(game,Color.magenta, safeJunctions);
+		
 						
-						if(safeJunctions.length > 0) {
-//							for(int i=0;i<pills.length;i++) {			//check if the pill is still available		
-//								if(pills[i] == pill) {
-//									if(game.isPillStillAvailable(i)) {
+						realSafeJunction=new ArrayList<Integer>();
+	
+						// 
+						// The array was initialized with length of all junctions
+						// Consider only those != 0
+						for(int node: safeJunctions) {
+							for(int nodeOth: safeJunctions) {
+								if(node != 0 && nodeOth !=0 && node != nodeOth) {
+										realSafeJunction.add(node);
+								}
+							}
+						}
+						
+						if(realSafeJunction.size() >= 2) {
+							for(int i=0;i<pills.length;i++) {			//check if the pill is still available		
+								if(pills[i] == pill) {
+									if(game.isPillStillAvailable(i)) {
 										if(dist < minDistance) 
 										{
 											safeClosestPill = pill;
 											minDistance = dist;
+											chosenNodeSafeJunctions = realSafeJunction;
+//											System.out.println("current pill: " + pill + " n° of safe junctions: " + closeSafeJunction.size());
 										}
-//									}
-//								}
-//							}
+									}
+								}
+							}
 						}
 					}
 				}
@@ -267,17 +264,12 @@ public class MsPacManIlaria extends Controller<MOVE>
 					System.out.println("(neighbouringPills.length == 0) ");
 				}
 				
-//				System.out.println("min distance pacman =  " + minDistance + " pill index: " + safeClosestPill + " move: " + move.toString());
+				System.out.println("min distance pacman =  " + minDistance + " pill index: " + safeClosestPill + " move: " + move.toString());
 				
 				if(safeClosestPill != -1) {
 						GameView.addPoints(game,Color.green, game.getShortestPath(current, safeClosestPill));
 						cumulativePoints[m] += 50;
 				}
-				
-//				System.out.println(move.toString());
-	//			else {
-	//				System.out.println("boooooooo ");
-	//			}
 			}
 
 			
@@ -285,6 +277,7 @@ public class MsPacManIlaria extends Controller<MOVE>
 			// compare the distance of pacman to the pill
 			// the shortest one is the correct
 			if(minDistance < shortestDist) {
+				moveSafeJunctions = chosenNodeSafeJunctions;
 				shortestDist = minDistance;
 				bestMove = m;
 			}
@@ -292,58 +285,17 @@ public class MsPacManIlaria extends Controller<MOVE>
 			m++;
 		} // end for moves
 		
+		// Visualize safe junctions
+		int[] safeNodes=new int[moveSafeJunctions.size()];		
+		for(int i=0;i<safeNodes.length;i++)
+			safeNodes[i]=moveSafeJunctions.get(i);
+		GameView.addPoints(game,Color.magenta, safeNodes);
+		
 		returnValues[0] = cumulativePoints[bestMove];
 		returnValues[1] = bestMove;
 		
 		return returnValues;
 		
-
-		// points for each near pill
-//		int[] pills=game.getPillIndices();		
-//		
-//		ArrayList<Integer> targets=new ArrayList<Integer>();
-//		
-//		for(int i=0;i<pills.length;i++)					//check which pills are available			
-//			if(game.isPillStillAvailable(i))
-//				targets.add(pills[i]);				
-//			
-//		int[] targetsArray=new int[targets.size()];		//convert from ArrayList to array
-//		
-//		for(int i=0;i<targetsArray.length;i++)
-//			targetsArray[i]=targets.get(i);
-		
-//		if(targetsArray.length != 0)
-//		{
-//			// careful! there might be that the closest pill is next to a power pill and we don't want to eat them in heuristic0
-//			// avoid that path
-//			boolean goodPath = true; // assuming it is true
-////			int[] path = game.getShortestPath(pos, game.getClosestNodeIndexFromNodeIndex(pos,targetsArray,DM.PATH));
-////			for(int elem : path) {
-////				if(game.getPowerPillIndex(elem) != -1) {
-////					// there is a powerpill in the path and it is elem
-////					// great penalty for this move
-////					cumulativePoints -= 400;
-////					goodPath = false;
-////				}
-////			}
-//			if(goodPath) {
-//				cumulativePoints += 30;
-//				// closest pills have higher utility
-//				int current = game.getPacmanCurrentNodeIndex();
-//				int minDist = game.getShortestPathDistance(current, game.getClosestNodeIndexFromNodeIndex(current,targetsArray,DM.PATH));
-//				if(minDist>=0 && minDist <2) {
-////					System.out.println("pill vicinoo");				
-//					cumulativePoints += 10;
-//				}
-//				else
-//				{
-////					System.out.println("pill lontano");
-//					cumulativePoints += 1;
-//				}
-//			}
-//			
-//		}
-//		System.out.println("junction?: " + game.isJunction(game.getPacmanCurrentNodeIndex()));
 		
 		
 		
