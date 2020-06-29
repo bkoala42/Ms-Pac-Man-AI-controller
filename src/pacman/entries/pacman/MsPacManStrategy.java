@@ -2,6 +2,7 @@ package pacman.entries.pacman;
 
 import pacman.game.Game;
 import pacman.game.GameView;
+import pacman.game.internal.Maze;
 
 import java.awt.Color;
 import java.util.ArrayList;
@@ -19,15 +20,69 @@ public class MsPacManStrategy {
 	private static final int GUARD_DISTANCE=10;
 	private static final int MIN_DISTANCE = 50;
 	
+	public int liarIndex(Game game) {
+		Maze maze = game.getCurrentMaze();
+		return maze.lairNodeIndex;
+	}
+	
+	/**
+	 * Get the closest pill from the available in targets
+	 * @param game game manager instance
+	 * @param pos current MsPacman position in the maze
+	 * @param targets available pill indices
+	 * @return the closest pill index
+	 */
+	public int getClosestPill(Game game, int pos, int[] targets) {
+		int minDistance = Integer.MAX_VALUE;
+		int bestPill = -1;
+		for(int pill: targets) {
+			if(game.getShortestPathDistance(pos, pill) < minDistance) {
+				minDistance = game.getShortestPathDistance(pos, pill);
+				bestPill = pill;
+			}
+		}
+		return bestPill;
+	}
+	
+	/**
+	 * Get the index of the closest power pill
+	 * @param game game manager instance
+	 * @param pos current MsPacman position in the maze
+	 * @return index of the closest power pill
+	 */
+	public int getClosestPowerPillIndex(Game game, int pos) {
+		int[] pills = null;
+		pills = game.getPowerPillIndices();
+		int minDistance = Integer.MAX_VALUE;
+		int bestPill = -1;
+		
+		for(int pill: pills) {
+			if(game.getShortestPathDistance(pos, pill) < minDistance) {
+				minDistance = game.getShortestPathDistance(pos, pill);
+				bestPill = pill;
+			}
+		}
+		return bestPill;
+	}
+	
+	/**
+	 * Get the closest ghost
+	 * @param game game manager instance
+	 * @param pos current MsPacman position in the maze
+	 * @return the closest ghost 
+	 */
 	public GHOST getCloserGhost(Game game, int pos) {
 		int minDistance=Integer.MAX_VALUE, distance = 0;
+		int ghostIndex;
 		GHOST minGhost=null;	
 		
 		for(GHOST ghost : GHOST.values()) {
-			distance=game.getShortestPathDistance(pos, game.getGhostCurrentNodeIndex(ghost));
-			if(distance<minDistance) {
-				minDistance=distance;
-				minGhost=ghost;
+			if(game.getGhostEdibleTime(ghost) <= 0 && game.getGhostLairTime(ghost) <= 0) {
+				distance = game.getShortestPathDistance(pos, game.getGhostCurrentNodeIndex(ghost));
+				if(distance < minDistance) {
+					minDistance=distance;
+					minGhost=ghost;
+				}
 			}
 		}
 		return minGhost;
@@ -46,26 +101,30 @@ public class MsPacManStrategy {
 		for(int target: targets) {
 			powerPillsDistance.put(game.getShortestPathDistance(pos, target), target);
 		}
-		
+//		System.out.println(powerPillsDistance.values());
 		// check if there is a power pill reachable with no ghosts in the path
 		int[] path = null;
 		boolean safePath = true;
 		int bestPill = -1;
 		for(Integer target: powerPillsDistance.values()) {
-			path = game.getShortestPath(pos, target);
-			for(int gIndex: path) {
-				for(GHOST ghost : GHOST.values()) {
-					if(gIndex == game.getGhostCurrentNodeIndex(ghost)) {
-						safePath = false;
-					}
-				}
-				if(!safePath)
-					break;
-			}
-			if(safePath) {
+			if(checkSafeChase(target, pos, game)) {
 				bestPill = target;
 				break;
 			}
+//			path = game.getShortestPath(pos, target);
+//			for(int gIndex: path) {
+//				for(GHOST ghost : GHOST.values()) {
+//					if(gIndex == game.getGhostCurrentNodeIndex(ghost)) {
+//						safePath = false;
+//					}
+//				}
+//				if(!safePath)
+//					break;
+//			}
+//			if(safePath) {
+//				bestPill = target;
+//				break;
+//			}
 		}
 //		int minGhostDistance = Integer.MAX_VALUE;
 //		int bestPill = -1;
@@ -121,7 +180,7 @@ public class MsPacManStrategy {
 		GHOST minGhost=null;		
 		
 		for(GHOST ghost : GHOST.values())
-			if(game.getGhostEdibleTime(ghost) > 10) {
+			if(game.getGhostEdibleTime(ghost) > 30) {
 				int distance=game.getShortestPathDistance(pos, game.getGhostCurrentNodeIndex(ghost));
 				if(distance<minDistance) {
 					minDistance=distance;
@@ -132,19 +191,19 @@ public class MsPacManStrategy {
 	}
 	
 	/**
-	 * Checks if all ghosts are in the liar
+	 * Checks if at least a ghostis in the liar
 	 * @param game game manager instance
-	 * @return true if all ghosts are in liar, false otherwise
+	 * @return true if there is a ghost in liar, false otherwise
 	 */
-	public boolean areGhostsInLiar(Game game) {
-		boolean areAllGhostInLair = true;
+	public boolean isThereGhostInLiar(Game game) {
+		boolean ghostInLair = false;
 		for(GHOST ghost : GHOST.values()) { 
-			if(game.getGhostLairTime(ghost)==0) {
-				areAllGhostInLair = false;
+			if(game.getGhostLairTime(ghost) > 0) {
+				ghostInLair = true;
 				break;
 			}
 		}
-		return areAllGhostInLair;
+		return ghostInLair;
 	}
 	
 	/**
@@ -208,14 +267,16 @@ public class MsPacManStrategy {
 							}
 							// this junction is a safe place, get the best way to reach it if no ghosts are in the path
 							else {
-								path = game.getShortestPath(pos, junct);
-								for(int elem: path) {
-									for(GHOST ghost2 : GHOST.values()) {
-										if(elem == game.getGhostCurrentNodeIndex(ghost2)) {
-											safeJunct = false;
-										}
-									}
-								}
+								if(!checkSafeChase(junct, pos, game))
+									safeJunct = false;
+//								path = game.getShortestPath(pos, junct);
+//								for(int elem: path) {
+//									for(GHOST ghost2 : GHOST.values()) {
+//										if(elem == game.getGhostCurrentNodeIndex(ghost2)) {
+//											safeJunct = false;
+//										}
+//									}
+//								}
 							}
 						}
 					}
@@ -241,14 +302,14 @@ public class MsPacManStrategy {
 	
 	/**
 	 * Checks if MsPacman can safely chase a ghost
-	 * @param minGhost ghost to chase
+	 * @param minGhost ghost index to chase
 	 * @param pos current MsPacman position in the maze
 	 * @param game game manager instance
 	 * @return true if MsPacman can safely chase ghost, false otherwise
 	 */
-	public boolean checkSafeChase(GHOST minGhost, int pos, Game game) {
+	public boolean checkSafeChase(int minGhost, int pos, Game game) {
 		// check if the non edible ghost ghostnot is in the path for going to the minGhost
-		int[] path = game.getShortestPath(pos, game.getGhostCurrentNodeIndex(minGhost));
+		int[] path = game.getShortestPath(pos, minGhost);
 		for(int gIndex: path) {
 			for(GHOST ghost : GHOST.values()) {
 				if(game.getGhostEdibleTime(ghost)==0) {
@@ -293,7 +354,7 @@ public class MsPacManStrategy {
 							chasers += 1;
 					}
 				}
-				GameView.addPoints(game,Color.green, game.getShortestPath(pos, game.getGhostCurrentNodeIndex(maxGhost)));
+				//GameView.addPoints(game,Color.green, game.getShortestPath(pos, game.getGhostCurrentNodeIndex(maxGhost)));
 				//System.out.println("Sono inseguito da "+chasers);
 			}
 		}
