@@ -97,75 +97,25 @@ public class MsPacManStrategy {
 	 */
 	public int trapTheGhosts(Game game, int pos, int[] targets) {
 		SortedMap<Integer, Integer> powerPillsDistance = new TreeMap<Integer, Integer>();
+		SortedMap<Integer, GHOST> ghostDistance = new TreeMap<Integer, GHOST>();
 		// sort by distance available power pills
 		for(int target: targets) {
 			powerPillsDistance.put(game.getShortestPathDistance(pos, target), target);
 		}
-//		System.out.println(powerPillsDistance.values());
+		for(GHOST ghost: GHOST.values()) {
+			ghostDistance.put(game.getShortestPathDistance(pos, game.getGhostCurrentNodeIndex(ghost)), ghost);
+		}
 		// check if there is a power pill reachable with no ghosts in the path
 		int[] path = null;
-		boolean safePath = true;
 		int bestPill = -1;
 		for(Integer target: powerPillsDistance.values()) {
-			if(checkSafeChase(target, pos, game)) {
-				bestPill = target;
-				break;
+			for(Integer ghostDist: ghostDistance.keySet()) {
+				if(checkSafeChase(target, pos, game) && ghostDist > game.getShortestPathDistance(pos, target)) {
+					bestPill = target;
+					break;
+				}
 			}
-//			path = game.getShortestPath(pos, target);
-//			for(int gIndex: path) {
-//				for(GHOST ghost : GHOST.values()) {
-//					if(gIndex == game.getGhostCurrentNodeIndex(ghost)) {
-//						safePath = false;
-//					}
-//				}
-//				if(!safePath)
-//					break;
-//			}
-//			if(safePath) {
-//				bestPill = target;
-//				break;
-//			}
 		}
-//		int minGhostDistance = Integer.MAX_VALUE;
-//		int bestPill = -1;
-////		int[] distance=new int[targets.length];		    //shortest path distances of MsPacman from power pills 
-//		int[] distanceGhost=new int[targets.length]; 	//shortest path distances of ghosts from power pills 
-//		int d = Integer.MAX_VALUE;
-//		
-//		
-	
-//			path = game.getShortestPath(pos, d);
-//			for(int gIndex: path) {
-//				for(GHOST ghost : GHOST.values()) {
-//					if(game.getGhostEdibleTime(ghost)==0) {
-//						if(gIndex == game.getGhostCurrentNodeIndex(ghost)) {
-//							//System.out.println("ghost inbetween");
-//							return false;
-//						}
-//					}
-//				}
-//			}
-//		}
-		
-//		// compute shortest path distance to power pills for MsPacman and the ghosts
-//		for(int i=0; i<distance.length; i++) {
-//			for(GHOST ghost: GHOST.values()) {
-//				if(game.getShortestPathDistance(game.getGhostCurrentNodeIndex(ghost), targets[i]) < minGhostDistance)
-//					minGhostDistance = game.getShortestPathDistance(game.getGhostCurrentNodeIndex(ghost), targets[i]);
-//			}
-//			distanceGhost[i] = minGhostDistance;
-//			minGhostDistance = Integer.MAX_VALUE;
-//			distance[i]=game.getShortestPathDistance(pos, targets[i]);
-//		}
-//		
-//		// if exists, pick as target a power pill nearer to MsPacman and far from ghosts
-//		int diff = 0;
-//		for(int i = 0; i < distance.length; i++) {
-//			if(distance[i] < distanceGhost[i]) {
-//				bestPill = targets[i];
-//				diff = distanceGhost[i] - distance[i];
-//			}
-//		}
 		return bestPill;
 	}
 	
