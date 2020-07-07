@@ -395,7 +395,7 @@ public class MsPacManStrategy {
 		
 		// check if ghosts are chasing MsPacman
 		try {
-			if(maxGhost != null) {
+			if(maxGhost != null && game.getGhostLairTime(maxGhost) == 0) {
 				int[] path = game.getShortestPath(pos, game.getGhostCurrentNodeIndex(maxGhost));
 				for(int i: path) {
 					for(GHOST ghost: GHOST.values()) {
