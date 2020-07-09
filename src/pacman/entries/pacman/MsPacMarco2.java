@@ -204,8 +204,8 @@ public class MsPacMarco2 extends Controller<MOVE>
 			edibleGhost = strategy.isThereEdibleGhost(game, current);
 			int trapPowerPill = strategy.trapTheGhosts(game, current, powerPills);
 			
-//			if(closestGhost != null) 
-//				GameView.addPoints(game, Color.white, game.getShortestPath(current, game.getGhostCurrentNodeIndex(closestGhost)));
+			if(closestGhost != null) 
+				GameView.addPoints(game, Color.white, game.getShortestPath(current, game.getGhostCurrentNodeIndex(closestGhost)));
 			
 			// check if MsPacman is chased, this is important to change strategy and fool ghosts
 			boolean chased = false;
@@ -302,16 +302,32 @@ public class MsPacMarco2 extends Controller<MOVE>
 					score.add(195);
 				}
 				else if(game.getShortestPathDistance(current, game.getGhostCurrentNodeIndex(closestGhost)) < MIN_DISTANCE &&
+						strategy.getClosestPill(game, current, powerPills, true) != -1 && 
+						move == game.getNextMoveTowardsTarget(current, strategy.getClosestPill(game, current, powerPills, true), DM.PATH) &&
+						strategy.checkSafeChase(strategy.getClosestPill(game, current, powerPills, true), current, game)) {
+					GameView.addPoints(game, Color.yellow, game.getShortestPath(current, strategy.getClosestPill(game, current, powerPills, true)));
+					score.add(193);
+				}
+				else if(game.getShortestPathDistance(current, game.getGhostCurrentNodeIndex(closestGhost)) < MIN_DISTANCE &&
 						strategy.getClosestPill(game, current, pills, true) != -1 && 
 						move == game.getNextMoveTowardsTarget(current, strategy.getClosestPill(game, current, pills, true), DM.PATH) &&
 						strategy.checkSafeChase(strategy.getClosestPill(game, current, pills, true), current, game)) {
+					GameView.addPoints(game, Color.yellow, game.getShortestPath(current, strategy.getClosestPill(game, current, pills, true)));
 					score.add(192);
+				}
+				else if(game.getShortestPathDistance(current, game.getGhostCurrentNodeIndex(closestGhost)) < MIN_DISTANCE &&
+						strategy.getClosestPill(game, current, powerPills, false) != -1 && 
+						move == game.getNextMoveTowardsTarget(current, strategy.getClosestPill(game, current, powerPills, false), DM.PATH) &&
+						strategy.checkSafeChase(strategy.getClosestPill(game, current, powerPills, false), current, game)) {
+					GameView.addPoints(game, Color.yellow, game.getShortestPath(current, strategy.getClosestPill(game, current, powerPills, false)));
+					score.add(191);
 				}
 				else if(game.getShortestPathDistance(current, game.getGhostCurrentNodeIndex(closestGhost)) < MIN_DISTANCE &&
 						strategy.getClosestPill(game, current, pills, false) != -1 && 
 						move == game.getNextMoveTowardsTarget(current, strategy.getClosestPill(game, current, pills, false), DM.PATH) &&
 						strategy.checkSafeChase(strategy.getClosestPill(game, current, pills, false), current, game)) {
-					score.add(191);
+					GameView.addPoints(game, Color.yellow, game.getShortestPath(current, strategy.getClosestPill(game, current, pills, false)));
+					score.add(190);
 				}
 				else if(game.getShortestPathDistance(current, game.getGhostCurrentNodeIndex(closestGhost)) < MIN_DISTANCE &&
 						move == game.getNextMoveAwayFromTarget(current, game.getGhostCurrentNodeIndex(closestGhost), DM.PATH)) {

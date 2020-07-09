@@ -64,22 +64,22 @@ public class MsPacManStrategy {
 				}
 			}
 			else {
-				if(game.getShortestPathDistance(pos, pill) < minDistance) {
-					minDistance = game.getShortestPathDistance(pos, pill);
-					bestPill = pill;
-				}
-//				ArrayList<Integer> ghostDistance = new ArrayList<Integer>();
-//				int dist = game.getShortestPathDistance(pos, pill);
-//				for(GHOST ghost: GHOST.values()) {
-//					if(game.getGhostEdibleTime(ghost) <= 0 && game.getGhostLairTime(ghost) <= 0) {
-//						ghostDistance.add(game.getShortestPathDistance(game.getGhostCurrentNodeIndex(ghost), pill));
-//					}
-//				}
-//				if(dist < minDistance && !ghostDistance.isEmpty() && Collections.min(ghostDistance) > maxDistance) {
+//				if(game.getShortestPathDistance(pos, pill) < minDistance) {
+//					minDistance = game.getShortestPathDistance(pos, pill);
 //					bestPill = pill;
-//					minDistance = dist;
-//					maxDistance = Collections.min(ghostDistance);
-//				}				
+//				}
+				ArrayList<Integer> ghostDistance = new ArrayList<Integer>();
+				int dist = game.getShortestPathDistance(pos, pill);
+				for(GHOST ghost: GHOST.values()) {
+					if(game.getGhostEdibleTime(ghost) <= 0 && game.getGhostLairTime(ghost) <= 0) {
+						ghostDistance.add(game.getShortestPathDistance(game.getGhostCurrentNodeIndex(ghost), pill));
+					}
+				}
+				if(dist < minDistance && !ghostDistance.isEmpty() && Collections.min(ghostDistance) > maxDistance) {
+					bestPill = pill;
+					minDistance = dist;
+					maxDistance = Collections.min(ghostDistance);
+				}				
 			}
 		}
 		return bestPill;
@@ -417,7 +417,7 @@ public class MsPacManStrategy {
 		int[] path = game.getShortestPath(pos, minGhost);
 		for(int gIndex: path) {
 			for(GHOST ghost : GHOST.values()) {
-				if(game.getGhostEdibleTime(ghost)==0) {
+				if(game.getGhostEdibleTime(ghost) <=0 && game.getGhostLairTime(ghost) <= 0) {
 					if(gIndex == game.getGhostCurrentNodeIndex(ghost)) {
 //						System.out.println("ghost inbetween");
 						return false;
