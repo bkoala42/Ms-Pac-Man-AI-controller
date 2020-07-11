@@ -37,10 +37,10 @@ public class MsPacManStrategy {
 //			closestGhostindex = game.getGhostCurrentNodeIndex(getCloserGhost(game, pos));
 		
 		// BISOGNA DECIDERE LA LOGICA CON CUI SCEGLIERE I TARGET
-		// La parte seguente � una possibile implementazione, not safe -> pill pi� vicino sufficientemente lontano dal ghost pi� vicino
-		//														  safe -> pill massimamente lontano dai ghost pi� vicino possibile
+		// La parte seguente è una possibile implementazione, not safe -> pill più vicino sufficientemente lontano dal ghost più vicino
+		//														  safe -> pill massimamente lontano dai ghost più vicino possibile
 		
-		// Sceglie il pill pi� vicino a pacman e massimamente lontano dai ghost
+		// Sceglie il pill più vicino a pacman e massimamente lontano dai ghost
 		for(int pill: targets) {
 			ArrayList<Integer> ghostDistance = new ArrayList<Integer>();
 			int dist = game.getShortestPathDistance(pos, pill);
@@ -416,6 +416,7 @@ public class MsPacManStrategy {
 					dist = game.getShortestPathDistance(pos, target);
 					
 					if(!chased) {
+						// Se pacman non è inseguito cerca semplicemente di allontanarsi dal ghost più vicino
 						if(getCloserGhost(game, pos) != null) 
 							closestGhostindex = game.getGhostCurrentNodeIndex(getCloserGhost(game, pos));
 						if(closestGhostindex != -1) {
@@ -426,6 +427,7 @@ public class MsPacManStrategy {
 								safeClosestJunction = safeJunctions.get(target);
 							}
 						}
+						// caso in cui non è possibile trovare un ghost vicino
 						else {
 							if(dist < minDistance) {
 								minDistance = dist;
@@ -435,12 +437,14 @@ public class MsPacManStrategy {
 						}
 					}
 					else {
+						// se pacman è inseguito deve trovare un punto nella mappa tenendo conto anche degli altri ghost
 						for(GHOST ghost: GHOST.values()) {
 							if(game.getGhostEdibleTime(ghost) <= 0 && game.getGhostLairTime(ghost) <= 0) {
 								ghostDistance.add(game.getShortestPathDistance(game.getGhostCurrentNodeIndex(ghost), target));
 							}
 						}
 						
+						// caso nessun ghost trovato
 						if(ghostDistance.isEmpty()) {
 							if(dist < minDistance) {
 								safeClosestIndex = target;
@@ -449,6 +453,7 @@ public class MsPacManStrategy {
 							}
 						}
 						else {
+							// seleziona il target più vicino a pacman e massimamente lontano dai ghost
 							if(dist < minDistance && Collections.min(ghostDistance) >= maxDistance) {
 								safeClosestIndex = target;
 								minDistance = dist;
