@@ -42,35 +42,13 @@ public class MsPacMarco2 extends Controller<MOVE>
 		myMove = MOVE.NEUTRAL;
 //		MOVE moves[] = game.getPossibleMoves(posMsPacman);
 		
-		int[] pills = strategy.pillTargets(game, false);
-		int[] powerPills = strategy.pillTargets(game, true);
-		
-		boolean chased = false;
 		MOVE[] moves = null;
-		GameView.addPoints(game, Color.red, strategy.lairIndex(game));
-		
-		if(strategy.isMsPacManChased(posMsPacman, game) >= 2) {
-			chased = true;
-//			moves = game.getPossibleMoves(posMsPacman, game.getPacmanLastMoveMade());
-			moves = game.getPossibleMoves(posMsPacman);
-			safeClosestJunctionPills = strategy.getClosestSafeJunction(game, posMsPacman, pills, true);
-			safeClosestIndexPill = safeClosestJunctionPills.remove(safeClosestJunctionPills.size()-1);
-			safeClosestJunctionPowerPills = strategy.getClosestSafeJunction(game, posMsPacman, powerPills, true);
-			safeClosestIndexPowerPill = safeClosestJunctionPowerPills.remove(safeClosestJunctionPowerPills.size()-1);
-		} 
-		else {
-			chased = false;
-			moves = game.getPossibleMoves(posMsPacman);
-			safeClosestJunctionPills = strategy.getClosestSafeJunction(game, posMsPacman, pills, false);
-			safeClosestIndexPill = safeClosestJunctionPills.remove(safeClosestJunctionPills.size()-1);
-			safeClosestJunctionPowerPills = strategy.getClosestSafeJunction(game, posMsPacman, powerPills, false);
-			safeClosestIndexPowerPill = safeClosestJunctionPowerPills.remove(safeClosestJunctionPowerPills.size()-1);
-		}
-		
+		moves = game.getPossibleMoves(posMsPacman);
+
 		int utility0[] = new int[2];
 		int utility1[] = new int[2];
 		
-		int heur0Max = 75;
+//		int heur0Max = 75;
 		
 //		utility1 = heuristic1(game, moves);
 //		if(utility1[0] > heur0Max) {
@@ -96,7 +74,7 @@ public class MsPacMarco2 extends Controller<MOVE>
 			myMove = moves[utility0[1]];
 		}
 		else {
-			System.out.println("heur1 won " + utility0[0] + " move: " + moves[utility0[1]]);
+			System.out.println("heur1 won " + utility1[0] + " move: " + moves[utility1[1]]);
 			myMove = moves[utility1[1]];
 		}
 		return myMove;
@@ -122,14 +100,15 @@ public class MsPacMarco2 extends Controller<MOVE>
 		int[] pills = null;
 		
 		pills = strategy.pillTargets(game, false);
-
+		
+		safeClosestJunctionPills = strategy.getClosestSafeJunction(game, game.getPacmanCurrentNodeIndex(), pills, false);
+		safeClosestIndexPill = safeClosestJunctionPills.remove(safeClosestJunctionPills.size()-1);
 		
 		for(MOVE move: moves) {
 			// the first check is on the presence of ghosts in lair to avoid instant kill
 			if(strategy.isThereGhostInLair(game) && 
 					game.getShortestPathDistance(current, game.getGhostInitialNodeIndex()) < LIAR_DISTANCE
-					&& move == game.getNextMoveAwayFromTarget(current, game.getGhostInitialNodeIndex(), DM.PATH)
-					) {
+					&& move == game.getNextMoveAwayFromTarget(current, game.getGhostInitialNodeIndex(), DM.PATH)) {
 				System.out.println("running from lair, distance: "+ game.getShortestPathDistance(current, game.getGhostInitialNodeIndex()));
 				score.add(85);
 			}
@@ -211,6 +190,19 @@ public class MsPacMarco2 extends Controller<MOVE>
 		powerPills = strategy.pillTargets(game, true);
 		pills = strategy.pillTargets(game, false);
 		
+		if(strategy.isMsPacManChased(game.getPacmanCurrentNodeIndex(), game) >= 2) {
+			safeClosestJunctionPills = strategy.getClosestSafeJunction(game, game.getPacmanCurrentNodeIndex(), pills, true);
+			safeClosestIndexPill = safeClosestJunctionPills.remove(safeClosestJunctionPills.size()-1);
+			safeClosestJunctionPowerPills = strategy.getClosestSafeJunction(game, game.getPacmanCurrentNodeIndex(), powerPills, true);
+			safeClosestIndexPowerPill = safeClosestJunctionPowerPills.remove(safeClosestJunctionPowerPills.size()-1);
+		} 
+		else {
+			safeClosestJunctionPills = strategy.getClosestSafeJunction(game, game.getPacmanCurrentNodeIndex(), pills, false);
+			safeClosestIndexPill = safeClosestJunctionPills.remove(safeClosestJunctionPills.size()-1);
+			safeClosestJunctionPowerPills = strategy.getClosestSafeJunction(game, game.getPacmanCurrentNodeIndex(), powerPills, false);
+			safeClosestIndexPowerPill = safeClosestJunctionPowerPills.remove(safeClosestJunctionPowerPills.size()-1);
+		}
+		
 		for(MOVE move: moves) {
 			// find the most "interesting" ghosts that are available
 			closestGhost = strategy.getCloserGhost(game, current);
@@ -272,36 +264,6 @@ public class MsPacMarco2 extends Controller<MOVE>
 			}
 			// no good moves available, just try to get away from the closest ghost
 			if(closestGhost != null) {
-//				// run away using a safe point in the map
-//				if(game.getShortestPathDistance(current, game.getGhostCurrentNodeIndex(closestGhost)) < MIN_DISTANCE/2 &&
-//						safeClosestIndexPowerPill != -1 && strategy.checkSafeChase(safeClosestIndexPowerPill, current, game) &&
-//						move == game.getNextMoveTowardsTarget(current, safeClosestIndexPowerPill, DM.PATH)) {
-//					GameView.addPoints(game, Color.red, game.getShortestPath(current, safeClosestIndexPowerPill));
-//					score.add(230);
-//				}
-//				else if(game.getShortestPathDistance(current, game.getGhostCurrentNodeIndex(closestGhost)) < MIN_DISTANCE/2 &&
-//						safeClosestIndexPill != -1 && strategy.checkSafeChase(safeClosestIndexPill, current, game) &&
-//						move == game.getNextMoveTowardsTarget(current, safeClosestIndexPill, DM.PATH)) {
-//					GameView.addPoints(game, Color.red, game.getShortestPath(current, safeClosestIndexPill));
-//					score.add(225);
-//				}
-//				else if(game.getShortestPathDistance(current, game.getGhostCurrentNodeIndex(closestGhost)) < MIN_DISTANCE/2 &&
-//						strategy.getClosestPill(game, current, pills, true) != -1 && 
-//						move == game.getNextMoveTowardsTarget(current, strategy.getClosestPill(game, current, pills, true), DM.PATH) &&
-//						strategy.checkSafeChase(strategy.getClosestPill(game, current, pills, true), current, game)) {
-//					score.add(194);
-//				}
-//				else if(game.getShortestPathDistance(current, game.getGhostCurrentNodeIndex(closestGhost)) < MIN_DISTANCE/2 &&
-//						strategy.getClosestPill(game, current, pills, false) != -1 && 
-//						move == game.getNextMoveTowardsTarget(current, strategy.getClosestPill(game, current, pills, false), DM.PATH) &&
-//						strategy.checkSafeChase(strategy.getClosestPill(game, current, pills, false), current, game)) {
-//					score.add(193);
-//				}
-//				else if(game.getShortestPathDistance(current, game.getGhostCurrentNodeIndex(closestGhost)) < MIN_DISTANCE/2 &&
-//						move == game.getNextMoveAwayFromTarget(current, game.getGhostCurrentNodeIndex(closestGhost), DM.PATH)) {
-//					score.add(185);
-//				}
-				
 				if(game.getShortestPathDistance(current, game.getGhostCurrentNodeIndex(closestGhost)) < MIN_DISTANCE &&
 						safeClosestIndexPowerPill != -1 && strategy.checkSafeChase(safeClosestIndexPowerPill, current, game) &&
 						move == game.getNextMoveTowardsTarget(current, safeClosestIndexPowerPill, DM.PATH)) {
@@ -349,44 +311,6 @@ public class MsPacMarco2 extends Controller<MOVE>
 				else {
 					score.add(-100);
 				}
-//				if(safeClosestIndexPowerPill != -1 && move == game.getNextMoveTowardsTarget(current, safeClosestIndexPowerPill, DM.PATH)) {
-//					if(game.getShortestPathDistance(current, game.getGhostCurrentNodeIndex(closestGhost)) < MIN_DISTANCE/2) {
-//						score.add(230);
-//					}
-//					else if(game.getShortestPathDistance(current, game.getGhostCurrentNodeIndex(closestGhost)) < MIN_DISTANCE){
-//						score.add(70);
-//					}
-//					else {
-//						score.add(-100);
-//					}
-//					try {
-//						GameView.addPoints(game, Color.red, game.getShortestPath(current, safeClosestIndexPowerPill));
-//					}
-//					catch(Exception e) {}
-//				}
-////				else if(strategy.isEmergencyWay(game, current, move)) {
-////					System.out.println("NINOOOOO NINOOOO");
-////					score.add(65);
-////				}
-//				// no better choice than just running away
-//				else if(move == game.getNextMoveAwayFromTarget(current, game.getGhostCurrentNodeIndex(closestGhost), DM.PATH)) {
-//					if(game.getShortestPathDistance(current, game.getGhostCurrentNodeIndex(closestGhost)) < MIN_DISTANCE/2) {
-//						score.add(60);
-//					}
-//					else if(game.getShortestPathDistance(current, game.getGhostCurrentNodeIndex(closestGhost)) < MIN_DISTANCE){
-//						score.add(20);
-//					}
-//					else {
-//						score.add(-100);
-//					}
-//					try {
-//						GameView.addPoints(game, Color.red, game.getShortestPath(current, game.getGhostCurrentNodeIndex(closestGhost)));
-//					}
-//					catch(Exception e) {}
-//				}
-//				else {
-//					score.add(-100);
-//				}
 			}
 			if(score.isEmpty()) {
 				score.add(-100);
