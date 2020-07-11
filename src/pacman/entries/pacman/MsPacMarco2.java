@@ -47,6 +47,8 @@ public class MsPacMarco2 extends Controller<MOVE>
 		
 		boolean chased = false;
 		MOVE[] moves = null;
+		GameView.addPoints(game, Color.red, strategy.lairIndex(game));
+		
 		if(strategy.isMsPacManChased(posMsPacman, game) >= 2) {
 			chased = true;
 //			moves = game.getPossibleMoves(posMsPacman, game.getPacmanLastMoveMade());
@@ -70,21 +72,32 @@ public class MsPacMarco2 extends Controller<MOVE>
 		
 		int heur0Max = 75;
 		
+//		utility1 = heuristic1(game, moves);
+//		if(utility1[0] > heur0Max) {
+//			System.out.println("heur1 won " + utility1[0] + " move: " + moves[utility1[1]]);
+//			myMove = moves[utility1[1]];
+//		}
+//		else {
+//			utility0 = heuristic0(game, moves);	
+//			if(utility0[0] > utility1[0]) {
+//				System.out.println("heur0 won " + utility0[0] + " move: " + moves[utility0[1]]);
+//				myMove = moves[utility0[1]];
+//			}
+//			else {
+//				System.out.println("heur1 won " + utility1[0] + " move: " + moves[utility1[1]]);
+//				myMove = moves[utility1[1]];
+//			}
+//		}
+		
+		utility0 = heuristic0(game, moves);		
 		utility1 = heuristic1(game, moves);
-		if(utility1[0] > heur0Max) {
-			System.out.println("heur1 won " + utility1[0] + " move: " + moves[utility1[1]]);
-			myMove = moves[utility1[1]];
+		if(utility0[0] > utility1[0]) {
+			System.out.println("heur0 won " + utility0[0] + " move: " + moves[utility0[1]]);
+			myMove = moves[utility0[1]];
 		}
 		else {
-			utility0 = heuristic0(game, moves);	
-			if(utility0[0] > utility1[0]) {
-				System.out.println("heur0 won " + utility0[0] + " move: " + moves[utility0[1]]);
-				myMove = moves[utility0[1]];
-			}
-			else {
-				System.out.println("heur1 won " + utility1[0] + " move: " + moves[utility1[1]]);
-				myMove = moves[utility1[1]];
-			}
+			System.out.println("heur1 won " + utility0[0] + " move: " + moves[utility0[1]]);
+			myMove = moves[utility1[1]];
 		}
 		return myMove;
 	}
@@ -109,48 +122,48 @@ public class MsPacMarco2 extends Controller<MOVE>
 		int[] pills = null;
 		
 		pills = strategy.pillTargets(game, false);
-		
-//		if(strategy.isMsPacManChased(current, game) >= 2) {
-//			System.out.println("Sono inseguito, safe points "+safeClosestIndexPill+" "+safeClosestIndexPowerPill);
-//		}
-//		else 
-//			System.out.println("Non sono inseguito, safe points "+safeClosestIndexPill+" "+safeClosestIndexPowerPill);
+
 		
 		for(MOVE move: moves) {
-			// the first check is on the presence of ghosts in liar to avoid instant kill
-			if(strategy.isThereGhostInLiar(game) && 
-					game.getShortestPathDistance(current, game.getGhostInitialNodeIndex()) < LIAR_DISTANCE &&
-					move == game.getNextMoveAwayFromTarget(current, game.getGhostInitialNodeIndex(), DM.PATH)) {
-//				System.out.println(game.getShortestPathDistance(current, game.getGhostInitialNodeIndex()));
-				score.add(75);
+			// the first check is on the presence of ghosts in lair to avoid instant kill
+			if(strategy.isThereGhostInLair(game) && 
+					game.getShortestPathDistance(current, game.getGhostInitialNodeIndex()) < LIAR_DISTANCE
+					&& move == game.getNextMoveAwayFromTarget(current, game.getGhostInitialNodeIndex(), DM.PATH)
+					) {
+				System.out.println("running from lair, distance: "+ game.getShortestPathDistance(current, game.getGhostInitialNodeIndex()));
+				score.add(85);
 			}
+			
 			// There is a safe way to follow
-			if(safeClosestIndexPill != -1 && strategy.checkSafeChase(safeClosestIndexPill, current, game) &&
-					move == game.getNextMoveTowardsTarget(current, safeClosestIndexPill, DM.PATH)) {
+			if(safeClosestIndexPill != -1) {
 				score.add(50);
 				GameView.addPoints(game,Color.lightGray, game.getShortestPath(current, safeClosestIndexPill));
 			}
-			// MsPacman was not able to find a safe path, reward the moves that takes towards the next pill
 			else {
-				if(strategy.getClosestPill(game, current, pills, true) != -1 && 
-						move == game.getNextMoveTowardsTarget(current, strategy.getClosestPill(game, current, pills, true), DM.PATH) &&
-						strategy.checkSafeChase(strategy.getClosestPill(game, current, pills, true), current, game)) {
-					score.add(30);
-					GameView.addPoints(game,Color.yellow, game.getShortestPath(current, strategy.getClosestPill(game, current, pills, true)));
-				}
-				else if(strategy.getClosestPill(game, current, pills, false) != -1 && 
-						move == game.getNextMoveTowardsTarget(current, strategy.getClosestPill(game, current, pills, false), DM.PATH) &&
-						strategy.checkSafeChase(strategy.getClosestPill(game, current, pills, false), current, game)){
-					score.add(25);
-					GameView.addPoints(game,Color.magenta, game.getShortestPath(current, strategy.getClosestPill(game, current, pills, false)));
-				}
-				else {
-					score.add(-100);
-				}
+				score.add(0);
 			}
-			if(score.isEmpty()) {
-				score.add(-100);
-			}
+			
+			// MsPacman was not able to find a safe path, reward the moves that takes towards the next pill
+//			else {
+//				if(strategy.getClosestPill(game, current, pills, true) != -1 && 
+//						move == game.getNextMoveTowardsTarget(current, strategy.getClosestPill(game, current, pills, true), DM.PATH) &&
+//						strategy.checkSafeChase(strategy.getClosestPill(game, current, pills, true), current, game)) {
+//					score.add(30);
+//					GameView.addPoints(game,Color.yellow, game.getShortestPath(current, strategy.getClosestPill(game, current, pills, true)));
+//				}
+//				else if(strategy.getClosestPill(game, current, pills, false) != -1 && 
+//						move == game.getNextMoveTowardsTarget(current, strategy.getClosestPill(game, current, pills, false), DM.PATH) &&
+//						strategy.checkSafeChase(strategy.getClosestPill(game, current, pills, false), current, game)){
+//					score.add(25);
+//					GameView.addPoints(game,Color.magenta, game.getShortestPath(current, strategy.getClosestPill(game, current, pills, false)));
+//				}
+//				else {
+//					score.add(-100);
+//				}
+//			}
+//			if(score.isEmpty()) {
+//				score.add(-100);
+//			}
 			movesScore.put(m, score.get(score.indexOf(Collections.max(score))));
 			score.clear();
 			m++;
@@ -204,8 +217,8 @@ public class MsPacMarco2 extends Controller<MOVE>
 			edibleGhost = strategy.isThereEdibleGhost(game, current);
 			int trapPowerPill = strategy.trapTheGhosts(game, current, powerPills);
 			
-			if(closestGhost != null) 
-				GameView.addPoints(game, Color.white, game.getShortestPath(current, game.getGhostCurrentNodeIndex(closestGhost)));
+//			if(closestGhost != null) 
+//				GameView.addPoints(game, Color.white, game.getShortestPath(current, game.getGhostCurrentNodeIndex(closestGhost)));
 			
 			// check if MsPacman is chased, this is important to change strategy and fool ghosts
 			boolean chased = false;
@@ -220,7 +233,7 @@ public class MsPacMarco2 extends Controller<MOVE>
 			// when there is no chance of eating, possibly staying around power pills
 			// the first check is on the presence of ghosts in liar to avoid instant kill
 //			System.out.println(game.getShortestPathDistance(current, game.getGhostInitialNodeIndex()));
-			if(strategy.isThereGhostInLiar(game) && 
+			if(strategy.isThereGhostInLair(game) && 
 					game.getShortestPathDistance(current, game.getGhostInitialNodeIndex()) < LIAR_DISTANCE &&
 					move == game.getNextMoveAwayFromTarget(current, game.getGhostInitialNodeIndex(), DM.PATH)) {
 				score.add(220);

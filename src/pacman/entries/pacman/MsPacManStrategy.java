@@ -23,7 +23,7 @@ public class MsPacManStrategy {
 	private static final int GUARD_DISTANCE = 10;
 	private static final int MIN_DISTANCE = 40;
 	
-	public int liarIndex(Game game) {
+	public int lairIndex(Game game) {
 		Maze maze = game.getCurrentMaze();
 		return maze.lairNodeIndex;
 	}
@@ -203,11 +203,11 @@ public class MsPacManStrategy {
 	}
 	
 	/**
-	 * Checks if at least a ghostis in the liar
+	 * Checks if at least a ghost is in the lair
 	 * @param game game manager instance
-	 * @return true if there is a ghost in liar, false otherwise
+	 * @return true if there is a ghost in lair, false otherwise
 	 */
-	public boolean isThereGhostInLiar(Game game) {
+	public boolean isThereGhostInLair(Game game) {
 		boolean ghostInLair = false;
 		for(GHOST ghost : GHOST.values()) { 
 			if(game.getGhostLairTime(ghost) > 0) {
@@ -233,11 +233,18 @@ public class MsPacManStrategy {
 			for(int i=0;i<pills.length;i++)								
 				if(game.isPowerPillStillAvailable(i))
 					targets.add(pills[i]);	
+			// no power pills left
+			if(targets.size() == 0) {
+				pills = game.getPillIndices();
+				for(int i=0;i<pills.length;i++)								
+					if(game.isPillStillAvailable(i))
+						targets.add(pills[i]);
+			}
 		}
 		else {
 			pills = game.getPillIndices();
 			for(int i=0;i<pills.length;i++)								
-				if(game.isPillStillAvailable(i))
+//				if(game.isPillStillAvailable(i))
 					targets.add(pills[i]);	
 		}
 		int[] targetsArray=new int[targets.size()];		
@@ -258,15 +265,14 @@ public class MsPacManStrategy {
 		int dist = 0, j = 0;
 		int[] path = null;
 		boolean safeJunct = true;
-		int[] neighbouringPills = game.getNeighbouringNodes(game.getClosestNodeIndexFromNodeIndex(pos, targets, DM.PATH));
-		if(neighbouringPills.length != 0) {
+		
+		if(targets.length != 0) {
 			for(int target: targets) {
 				j = 0;
 				int[] junctions = game.getJunctionIndices();
 				int[] safeJunctions = new int[junctions.length];
 				for(int junct : junctions) {
 					safeJunct = true;
-					//GameView.addPoints(game, Color.pink, junct);
 					dist = game.getShortestPathDistance(pos, target); 
 					for(GHOST ghost : GHOST.values()) { 
 						if(game.getGhostEdibleTime(ghost) < 30 && game.getGhostLairTime(ghost)==0) {
@@ -363,6 +369,7 @@ public class MsPacManStrategy {
 			}
 			else {
 				safeJunctions = getSafeJuctionsWhenChased(game, pos, targets);
+				System.out.println("Else chased reached");
 			}
 		}
 		
@@ -389,7 +396,33 @@ public class MsPacManStrategy {
 //		else {
 			if(safeJunctions != null) {
 				for(Integer target: safeJunctions.keySet()) {
-					if(safeJunctions.get(target).size() > 0) {
+					if(safeJunctions.get(target).size() >= 2) {
+						for(int i=0;i<targets.length;i++) {			//check if the pill is still available		
+							if(targets[i] == target) {
+								if(game.isPillStillAvailable(i)) {	
+							
+									dist = game.getShortestPathDistance(pos, target);
+									if(dist < minDistance) {
+										safeClosestIndex = target;
+										minDistance = dist;
+										safeClosestJunction = safeJunctions.get(target);
+									}
+									
+								}
+							}
+						}
+						
+					}
+				}
+			}
+			// If still there is no pill to reach safely, evaluate the junctions that MsPacman reaches before a ghost
+			// that is consider the closest node (with or without pills) that ms pacman can enter that is safe from ghosts
+			minDistance = Integer.MAX_VALUE;
+			dist = 0;
+			if(safeJunctions != null && safeClosestJunction.isEmpty()) {
+				for(Integer target: safeJunctions.keySet()) {
+					if(safeJunctions.get(target).size() >= 2) {
+						// target is the pill, also not available pills are considered
 						dist = game.getShortestPathDistance(pos, target);
 						if(dist < minDistance) {
 							safeClosestIndex = target;

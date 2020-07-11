@@ -184,7 +184,7 @@ public class MsPacManIlaria extends Controller<MOVE>
 							for(GHOST ghost : GHOST.values()) { 
 								if(game.getGhostEdibleTime(ghost)<30 && game.getGhostLairTime(ghost)==0) {
 									
-									if(dist+game.getShortestPathDistance(pill, junct)+GUARD_DISTANCE > // if Ms Pacman DOESN'T reaches the junction before a ghost
+									if(dist+game.getShortestPathDistance(pill, junct)+GUARD_DISTANCE > // if Ms Pacman DOESN'T reach the junction before a ghost
 									game.getShortestPathDistance(game.getGhostCurrentNodeIndex(ghost), junct, game.getGhostLastMoveMade(ghost))) {
 										safeJunct = false;
 									}
