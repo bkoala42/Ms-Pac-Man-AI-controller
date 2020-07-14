@@ -247,7 +247,7 @@ public class GreedyMsPacManStrategy {
 		// than the ghosts
 		for(int pill: pillsList) {
 			ArrayList<Integer> ghostDistance = new ArrayList<Integer>();
-			int dist = game.getShortestPathDistance(pos, pill);
+			int dist = game.getShortestPathDistance(pos, pill, game.getPacmanLastMoveMade());
 			// get ghosts distances from the pill
 			for(GHOST ghost: GHOST.values()) {
 				if(game.getGhostEdibleTime(ghost) <= 0 && game.getGhostLairTime(ghost) <= 0) {
@@ -291,7 +291,7 @@ public class GreedyMsPacManStrategy {
 	 * @param pos current MsPacman position in the maze
 	 * @return safe junction to run away from ghosts
 	 */
-	public int getEmergencyWay(Game game, int pos) {
+	public int getEmergencyWay(Game game, int pos, boolean safeSearch) {
 		// get all maze indices reachable by pacman
 		int[] pills = game.getPillIndices();
 		int[] powerPills = game.getPowerPillIndices();
@@ -307,7 +307,7 @@ public class GreedyMsPacManStrategy {
 		// The maze index corresponding to the emergency way is computed using the same logic of getClosestPill
 		ArrayList<Integer> ghostDistance = new ArrayList<Integer>();
 		for(int i: pillsList) {
-			dist = game.getShortestPathDistance(pos, i);
+			dist = game.getShortestPathDistance(pos, i, game.getPacmanLastMoveMade());
 			for(GHOST ghost: GHOST.values()) {
 				if(game.getGhostEdibleTime(ghost) <= 0 && game.getGhostLairTime(ghost) <= 0) {
 					ghostDistance.add(game.getShortestPathDistance(game.getGhostCurrentNodeIndex(ghost), i));
@@ -320,10 +320,20 @@ public class GreedyMsPacManStrategy {
 				}
 			}
 			else {
-				if(dist < minDistance && dist > GUARD_DISTANCE && dist < Collections.min(ghostDistance) && Collections.min(ghostDistance) >= maxDistance) {
-					emergencyIndex = i;
-					maxDistance = Collections.min(ghostDistance);
-					minDistance = dist;
+				if(safeSearch) {
+					if(dist < minDistance && dist <= Collections.min(ghostDistance)+GUARD_DISTANCE && Collections.min(ghostDistance) > maxDistance) {
+						emergencyIndex = i;
+						minDistance = dist;
+						maxDistance = Collections.min(ghostDistance);
+					}
+				}
+				// take any pill as far as possible from ghosts and closest to MsPacman, without caring of who reaches it first
+				else {
+					if(dist < minDistance && Collections.min(ghostDistance) > maxDistance) {
+						emergencyIndex = i;
+						minDistance = dist;
+						maxDistance = Collections.min(ghostDistance);
+					}
 				}
 			}
 			ghostDistance.clear();
@@ -472,7 +482,7 @@ public class GreedyMsPacManStrategy {
 			}
 		}
 		
-		// then check if a non edible ghost path to pacman intersects the path to the edible one
+		// then check if a non edible ghost path to pacman intersects the path to the target
 		// if so check if pacman is "faster" than the ghost
 		for(GHOST ghost : GHOST.values()) {
 			if(game.getGhostEdibleTime(ghost)==0 && game.getGhostLairTime(ghost) == 0) {

@@ -223,7 +223,8 @@ public class GreedyMsPacMan extends Controller<MOVE>
 		int closestSafeJunction = aStarJunctions[0];
 		int furthestSafeJunction = aStarJunctions[1];
 		
-		int greedySafeIndex = strategy.getEmergencyWay(game, current);
+		int greedyIndex = strategy.getEmergencyWay(game, current, false);
+		int greedySafeIndex = strategy.getEmergencyWay(game, current, true);
 		
 		// power pill to chase to trap the ghosts and eat them in sequence
 		int trapPowerPill = strategy.trapTheGhosts(game, current, strategy.getPowePillTargets(game, true));
@@ -234,6 +235,65 @@ public class GreedyMsPacMan extends Controller<MOVE>
 			closestGhost = strategy.getCloserGhost(game, current);
 			edibleGhost = strategy.isThereEdibleGhost(game, current);
 			
+			// There is a safely edible ghost, go and catch it
+			if(edibleGhost != null && strategy.checkSafeChase(game.getGhostCurrentNodeIndex(edibleGhost), current, game) &&
+					move == game.getNextMoveTowardsTarget(current, game.getGhostCurrentNodeIndex(edibleGhost), DM.PATH)) {
+				score.add(200);
+				GameView.addPoints(game, Color.green, game.getShortestPath(current, game.getGhostCurrentNodeIndex(edibleGhost)));
+			}
+			
+			// Escape from ghosts
+			if(closestGhost != null && game.getShortestPathDistance(current, game.getGhostCurrentNodeIndex(closestGhost)) < MIN_DISTANCE) {	
+				if(chasers > 3) {
+					// aggressive go for a walk
+					if(greedySafePill != -1 && strategy.checkSafeChase(greedySafePill, current, game) &&
+							move == game.getNextMoveTowardsTarget(current, greedySafePill, DM.PATH)) {
+						score.add(197);
+					}
+					else if(trapPowerPill != -1 && strategy.checkSafeChase(trapPowerPill, current, game) &&
+							move == game.getNextMoveTowardsTarget(current, trapPowerPill, DM.PATH)) {
+						score.add(196);
+					}
+					// METTERE I VALORI DI SCORE ***********************************
+					else if(safeEscapeNode != -1 && strategy.checkSafeChase(safeEscapeNode, current, game) &&
+							move == game.getNextMoveTowardsTarget(current, safeEscapeNode, DM.PATH)) {
+						score.add(195);
+					}
+					else if(greedyIndex != -1 && move == game.getNextMoveTowardsTarget(current, greedyIndex, DM.PATH)){
+						score.add(194);
+					}
+				}
+				else if(chasers == 3) {
+					if(trapPowerPill != -1 && strategy.checkSafeChase(trapPowerPill, current, game) &&
+							move == game.getNextMoveTowardsTarget(current, trapPowerPill, DM.PATH)) {
+						score.add(186);
+					}
+					else if(safeEscapeNode != -1 && strategy.checkSafeChase(safeEscapeNode, current, game) &&
+							move == game.getNextMoveTowardsTarget(current, safeEscapeNode, DM.PATH)) {
+						score.add(185);
+					}
+					else if(greedyIndex != -1 && move == game.getNextMoveTowardsTarget(current, greedyIndex, DM.PATH)){
+						score.add(184);
+					}
+				}
+				else {
+					if(safeEscapeNode != -1 && strategy.checkSafeChase(safeEscapeNode, current, game) &&
+							move == game.getNextMoveTowardsTarget(current, safeEscapeNode, DM.PATH)) {
+						score.add(175);
+					}
+					else if(greedyIndex != -1 && move == game.getNextMoveTowardsTarget(current, greedyIndex, DM.PATH)){
+						score.add(174);
+					}
+				}
+			}
+			else {
+				score.add(0);
+			}
+			
+			
+			
+			
+			/*
 			// When MsPacman is too close to the lair and ghosts are in it just go away, they could come out suddenly and kill you
 			// CAUTION: MS PACMAN OFTEN GETS STUCKED IN THE SAME PLACE FOLLOWING THIS RULE
 //			if(strategy.isThereGhostInLair(game) && 
@@ -258,12 +318,7 @@ public class GreedyMsPacMan extends Controller<MOVE>
 ////					GameView.addPoints(game, Color.cyan, game.getShortestPath(current, greedySafePill));
 //				}
 //			}
-			// There is a safely edible ghost, go and catch it
-			if(edibleGhost != null && strategy.checkSafeChase(game.getGhostCurrentNodeIndex(edibleGhost), current, game) &&
-					move == game.getNextMoveTowardsTarget(current, game.getGhostCurrentNodeIndex(edibleGhost), DM.PATH)) {
-				score.add(200);
-//				GameView.addPoints(game, Color.green, game.getShortestPath(current, game.getGhostCurrentNodeIndex(edibleGhost)));
-			}
+			
 			// no good moves available, just try to get away from the closest ghost
 			if(closestGhost != null && game.getShortestPathDistance(current, game.getGhostCurrentNodeIndex(closestGhost)) < MIN_DISTANCE) {	
 				// se usiamo il pill safe di A* (quello più lontano, inizia a fare giro giro tondo contro gli aggressive)
@@ -326,6 +381,7 @@ public class GreedyMsPacMan extends Controller<MOVE>
 					score.add(0);
 				}
 			}
+			*/
 			
 			if(score.isEmpty()) {
 				score.add(0);
