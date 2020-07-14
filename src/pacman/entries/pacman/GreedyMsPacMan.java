@@ -129,17 +129,17 @@ public class GreedyMsPacMan extends Controller<MOVE>
 			// Case 1: go to the best pill chosen greedily, always going further from ghosts (PILL + POWER PILL)
 			if(greedySafePill != -1 && move == game.getNextMoveTowardsTarget(current, greedySafePill, DM.PATH)) {
 				score.add(50);
-				GameView.addPoints(game,Color.lightGray, game.getShortestPath(current, greedySafePill));
+//				GameView.addPoints(game,Color.lightGray, game.getShortestPath(current, greedySafePill));
 			}
 			// Case 2: go to the optimal pill chosen according A* (PILL + POWER PILL)
 			if(furthestSafePill != -1 && move == game.getNextMoveTowardsTarget(current, furthestSafePill, DM.PATH)) {
 				score.add(40);
-				GameView.addPoints(game,Color.white, game.getShortestPath(current, furthestSafePill));
+//				GameView.addPoints(game,Color.white, game.getShortestPath(current, furthestSafePill));
 			}
 			// Case 3: no better choice than moving towards an apparently good pill (PILL + POWER PILL)
 			if(greedyPill != -1 && move == game.getNextMoveTowardsTarget(current, greedyPill, DM.PATH)) {
 				score.add(30);
-				GameView.addPoints(game,Color.gray, game.getShortestPath(current, greedyPill));
+//				GameView.addPoints(game,Color.gray, game.getShortestPath(current, greedyPill));
 			}
 			// Think that this is useless, Case 3 always turns on
 			else {
@@ -245,15 +245,15 @@ public class GreedyMsPacMan extends Controller<MOVE>
 			if(closestGhost != null && game.getShortestPathDistance(current, game.getGhostCurrentNodeIndex(closestGhost)) < MIN_DISTANCE) {	
 				// se usiamo il pill safe di A* (quello più lontano, inizia a fare giro giro tondo contro gli aggressive)
 				// usare invece il più vicino potrebbe essere pericoloso per fuggire (???)
-				if(greedySafePill != -1 && strategy.checkSafeChase(current, greedySafePill, game) &&
-						move == game.getNextMoveTowardsTarget(current, greedyPill, DM.PATH)) {
-					GameView.addPoints(game, Color.yellow, game.getShortestPath(current, greedyPill));
+				if(greedySafePill != -1 && strategy.checkSafeChase(greedySafePill, current, game) &&
+						move == game.getNextMoveTowardsTarget(current, greedySafePill, DM.PATH)) {
+					GameView.addPoints(game, Color.yellow, game.getShortestPath(current, greedySafePill));
 					score.add(195);
 				}
 				// use as anchor point to run away a safe junction
 				// usare la junct più vicina o la più lontana???
 				else if(furthestSafeJunction != -1 && move == game.getNextMoveTowardsTarget(current, furthestSafeJunction, DM.PATH)) {
-					GameView.addPoints(game, Color.yellow, game.getShortestPath(current, furthestSafeJunction));
+					GameView.addPoints(game, Color.orange, game.getShortestPath(current, furthestSafeJunction));
 					score.add(193);
 				}
 				// use as anchor point to run away an emergency point in the map
