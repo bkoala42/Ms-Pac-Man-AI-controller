@@ -170,7 +170,6 @@ public class GreedyMsPacManStrategy {
 										// check if in the path there is a ghost
 										for(GHOST ghost2 : GHOST.values()) {
 											if(elem == game.getGhostCurrentNodeIndex(ghost2)) {
-//												System.out.println("Else di reverse");
 												safeJunct = false;
 											}
 										}
@@ -209,11 +208,12 @@ public class GreedyMsPacManStrategy {
 				}
 			}
 		}
-//		// Visualize safe junctions
-//		int[] safeNodes=new int[chosenNodeSafeJunctions.size()];		
-//		for(int i=0;i<safeNodes.length;i++)
-//			safeNodes[i]=chosenNodeSafeJunctions.get(i);
-//		GameView.addPoints(game,Color.magenta, safeNodes);
+		// Visualize safe junctions
+		int[] safeNodes=new int[chosenNodeSafeJunctions.size()];		
+		for(int i=0;i<safeNodes.length;i++)
+			safeNodes[i]=chosenNodeSafeJunctions.get(i);
+		GameView.addPoints(game,Color.pink, safeNodes);
+		
 		return safePillWithJuncts;
 	}
 	 
@@ -231,8 +231,12 @@ public class GreedyMsPacManStrategy {
 		int[] powerPills = getPowePillTargets(game, true);
 		// put them all together
 		List<Integer> pillsList  = Arrays.stream(pills).boxed().collect(Collectors.toList());
-		List<Integer> powerPillsList  = Arrays.stream(powerPills).boxed().collect(Collectors.toList());
-		pillsList.addAll(powerPillsList);
+//		List<Integer> powerPillsList  = Arrays.stream(powerPills).boxed().collect(Collectors.toList());
+//		pillsList.addAll(powerPillsList);
+		if(isThereEdibleGhost(game, pos) == null) {
+		      List<Integer> powerPillsList  = Arrays.stream(powerPills).boxed().collect(Collectors.toList());
+		      pillsList.addAll(powerPillsList);
+	    }
 		
 		int minDistance = Integer.MAX_VALUE, maxDistance = Integer.MIN_VALUE;
 		int bestPill = -1;
@@ -412,14 +416,18 @@ public class GreedyMsPacManStrategy {
 		int minDistance=Integer.MAX_VALUE;
 		GHOST minGhost=null;		
 		
-		for(GHOST ghost : GHOST.values())
-			if(game.getGhostEdibleTime(ghost) > 30) {
-				int distance=game.getShortestPathDistance(pos, game.getGhostCurrentNodeIndex(ghost));
+		for(GHOST ghost : GHOST.values()) {
+			int distance=game.getShortestPathDistance(pos, game.getGhostCurrentNodeIndex(ghost));
+			if(game.getGhostEdibleTime(ghost) > 30
+					|| (game.getGhostEdibleTime(ghost) > 10 && game.getGhostEdibleTime(ghost) < 30 && distance < MIN_DISTANCE/2)
+					|| (game.getGhostEdibleTime(ghost) > 5 && game.getGhostEdibleTime(ghost) < 10 && distance < GUARD_DISTANCE)
+					) {
 				if(distance<minDistance) {
 					minDistance=distance;
 					minGhost=ghost;
 				}
 			}
+		}
 		return minGhost;
 	}
 	
@@ -447,7 +455,6 @@ public class GreedyMsPacManStrategy {
 	 * @return true if MsPacman can safely chase ghost, false otherwise
 	 */
 	public boolean checkSafeChase(int target, int pos, Game game) {
-		boolean safePath = true;
 		// check if the non edible ghost is in the path for going to the minGhost
 		int[] path = game.getShortestPath(pos, target);
 		// first check if a non edible ghost is in the path
@@ -457,11 +464,7 @@ public class GreedyMsPacManStrategy {
 				if(game.getGhostEdibleTime(ghost)==0 && game.getGhostLairTime(ghost) == 0) {
 					if(gIndex == game.getGhostCurrentNodeIndex(ghost))
 					{
-						safePath = false;
-						GameView.addPoints(game,Color.red, game.getShortestPath(pos, gIndex));
-					}
-					else {
-						GameView.addPoints(game,Color.gray, game.getShortestPath(pos, gIndex));
+						return false;
 					}
 				}
 			}
@@ -477,8 +480,10 @@ public class GreedyMsPacManStrategy {
 						if(gElem == pElem) {
 							// check if the ghost arrives there before pacman, then it is not safe
 							if(game.getShortestPathDistance(game.getGhostCurrentNodeIndex(ghost), gElem, game.getGhostLastMoveMade(ghost)) < 
-									game.getShortestPathDistance(pos, gElem)+GUARD_DISTANCE) {
-								GameView.addPoints(game,Color.red, game.getShortestPath(pos, gElem));
+									game.getShortestPathDistance(pos, gElem)+GUARD_DISTANCE+10) {
+								// View the intersection
+								GameView.addPoints(game,Color.red, path);
+								GameView.addPoints(game,Color.blue, ghostPath);
 								return false;
 							}
 						}
@@ -486,7 +491,7 @@ public class GreedyMsPacManStrategy {
 				}
 			}
 		}
-		return safePath;
+		return true;
 	}
 	
 	/**

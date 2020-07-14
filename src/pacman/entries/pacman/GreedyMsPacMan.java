@@ -26,7 +26,7 @@ public class GreedyMsPacMan extends Controller<MOVE>
 	private static final int GUARD_DISTANCE=10; // distance before getting eaten
 	
 	private GreedyMsPacManStrategy strategy;
-	private int greedySafePill, greedyPill, greedySafeIndex, greedyIndex, safePillWithJunction;
+	private int greedySafePill, greedyPill, greedySafeIndex, greedyIndex, safePillWithJunction, safeEscapeNode;
 	private int[] aStarPills, aStarJunctions, aStarIndices;
 	
 	public GreedyMsPacMan() {
@@ -77,6 +77,7 @@ public class GreedyMsPacMan extends Controller<MOVE>
 		greedyPill = strategy.getClosestPill(game, posMsPacman, false);
 		
 		safePillWithJunction = strategy.getSafePillWithJunction(game, posMsPacman, strategy.getPillTargets(game, true));
+		safeEscapeNode = strategy.getSafePillWithJunction(game, posMsPacman, strategy.getPillTargets(game, false));
 		
 //		safePills = strategy.getSafePill(game, posMsPacman);
 //		safeJunctions = strategy.getSafeJunction(game, posMsPacman);
@@ -139,7 +140,7 @@ public class GreedyMsPacMan extends Controller<MOVE>
 //				GameView.addPoints(game,Color.white, game.getShortestPath(current, safePillWithJunction));
 			}
 			// Case 1: go to the best pill chosen greedily, always going further from ghosts (PILL + POWER PILL)
-			if(greedySafePill != -1 &&
+			if(greedySafePill != -1 && closestGhostDistance > 2*MIN_DISTANCE &&
 					move == game.getNextMoveTowardsTarget(current, greedySafePill, DM.PATH)) {
 				score.add(40);
 //				GameView.addPoints(game,Color.lightGray, game.getShortestPath(current, greedySafePill));
@@ -150,9 +151,14 @@ public class GreedyMsPacMan extends Controller<MOVE>
 ////				GameView.addPoints(game,Color.white, game.getShortestPath(current, furthestSafePill));
 //			}
 			// Case 3: no better choice than moving towards an apparently good pill (PILL + POWER PILL)
-			if(greedyPill != -1 && move == game.getNextMoveTowardsTarget(current, greedyPill, DM.PATH)) {
+//			if(greedyPill != -1 && move == game.getNextMoveTowardsTarget(current, greedyPill, DM.PATH)) {
+//				score.add(30);
+////				GameView.addPoints(game,Color.gray, game.getShortestPath(current, greedyPill));
+//			}
+			// Escape to a node with 2 junctions available to reach
+			if(safeEscapeNode != -1 && move == game.getNextMoveTowardsTarget(current, safeEscapeNode, DM.PATH)) 
+			{
 				score.add(30);
-//				GameView.addPoints(game,Color.gray, game.getShortestPath(current, greedyPill));
 			}
 			if(score.isEmpty()) {
 				score.add(0);
@@ -168,6 +174,7 @@ public class GreedyMsPacMan extends Controller<MOVE>
 				bestMove = moveIndex;
 			}
 		}
+		
 		
 		returnValues[0] = tmp;
 		returnValues[1] = bestMove;
@@ -270,11 +277,11 @@ public class GreedyMsPacMan extends Controller<MOVE>
 				// Questo è il punto più delicato, sia con A* che con implementazione greedy (getEmergencyWay) spesso 
 				// non si riesce a fuggire, o perché prende una strada che va nei ghost (il che può anche verificarsi) o perché
 				// la strada c'è e ti salverebbe ma comincia a rincoglionirsi sul posto anziché seguirla
-				else if(greedySafeIndex != -1 &&
-						move == game.getNextMoveTowardsTarget(current, greedySafeIndex, DM.PATH)) {
-					score.add(191);
-//					GameView.addPoints(game, Color.magenta, game.getShortestPath(current, greedySafeIndex));
-				}
+//				else if(greedySafeIndex != -1 &&
+//						move == game.getNextMoveTowardsTarget(current, greedySafeIndex, DM.PATH)) {
+//					score.add(191);
+////					GameView.addPoints(game, Color.magenta, game.getShortestPath(current, greedySafeIndex));
+//				}
 				// there is no better choice than just going away from the closest ghost (very likely to die in this case)
 				// Sta roba va evitata come la peste, ci serve un caso bucket come quello del pill nella heur0
 				else if(move == game.getNextMoveAwayFromTarget(current, game.getGhostCurrentNodeIndex(closestGhost), DM.PATH)) {
