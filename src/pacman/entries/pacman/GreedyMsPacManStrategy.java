@@ -21,7 +21,7 @@ import pacman.game.Constants.MOVE;
 
 public class GreedyMsPacManStrategy {
 	
-	private static final int CROSS_DISTANCE = 3;
+	private static final int CHASE_DISTANCE = 50;
 	private static final int GUARD_DISTANCE = 5;
 	private static final int MIN_DISTANCE = 20;
 	
@@ -208,11 +208,11 @@ public class GreedyMsPacManStrategy {
 				}
 			}
 		}
-		// Visualize safe junctions
-		int[] safeNodes=new int[chosenNodeSafeJunctions.size()];		
-		for(int i=0;i<safeNodes.length;i++)
-			safeNodes[i]=chosenNodeSafeJunctions.get(i);
-		GameView.addPoints(game,Color.pink, safeNodes);
+//		// Visualize safe junctions
+//		int[] safeNodes=new int[chosenNodeSafeJunctions.size()];		
+//		for(int i=0;i<safeNodes.length;i++)
+//			safeNodes[i]=chosenNodeSafeJunctions.get(i);
+//		GameView.addPoints(game,Color.pink, safeNodes);
 		
 		return safePillWithJuncts;
 	}
@@ -365,10 +365,12 @@ public class GreedyMsPacManStrategy {
 		boolean safe = false;
 		
 		for(int pill: targets) {
+			safe = true;
 			if(game.getShortestPathDistance(pos, pill) < minDistance) {
 				for(GHOST ghost: GHOST.values()) {
 					if(game.getShortestPathDistance(pos, pill)+GUARD_DISTANCE > game.getShortestPathDistance(game.getGhostCurrentNodeIndex(ghost), pill)) {
 						safe = false;
+						break;
 					}
 				}
 				if(safe) {
@@ -480,7 +482,7 @@ public class GreedyMsPacManStrategy {
 						if(gElem == pElem) {
 							// check if the ghost arrives there before pacman, then it is not safe
 							if(game.getShortestPathDistance(game.getGhostCurrentNodeIndex(ghost), gElem, game.getGhostLastMoveMade(ghost)) < 
-									game.getShortestPathDistance(pos, gElem)+GUARD_DISTANCE+10) {
+									game.getShortestPathDistance(pos, gElem)+GUARD_DISTANCE) {
 								// View the intersection
 								GameView.addPoints(game,Color.red, path);
 								GameView.addPoints(game,Color.blue, ghostPath);
@@ -509,7 +511,7 @@ public class GreedyMsPacManStrategy {
 		for(GHOST ghost : GHOST.values()) {
 			distance = game.getShortestPathDistance(pos, game.getGhostCurrentNodeIndex(ghost));
 			// if a ghost is too far do not consider it as a chaser
-			if(distance > maxGhostDistance && distance < 2*MIN_DISTANCE &&
+			if(distance > maxGhostDistance && distance <= CHASE_DISTANCE &&
 					game.getGhostLairTime(ghost) <= 0 && game.getGhostEdibleTime(ghost) <= 0) {
 				maxGhostDistance = distance;
 				maxGhost = ghost;

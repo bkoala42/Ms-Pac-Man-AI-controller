@@ -26,7 +26,7 @@ public class GreedyMsPacMan extends Controller<MOVE>
 	private static final int GUARD_DISTANCE=10; // distance before getting eaten
 	
 	private GreedyMsPacManStrategy strategy;
-	private int greedySafePill, greedyPill, greedySafeIndex, greedyIndex, safePillWithJunction, safeEscapeNode;
+	private int greedySafePill, greedyPill, greedySafeIndex, greedyIndex, safePillWithJunction, safeEscapeNode, safePowerPillWithJunction;
 	private int[] aStarPills, aStarJunctions, aStarIndices;
 	
 	public GreedyMsPacMan() {
@@ -77,6 +77,7 @@ public class GreedyMsPacMan extends Controller<MOVE>
 		greedyPill = strategy.getClosestPill(game, posMsPacman, false);
 		
 		safePillWithJunction = strategy.getSafePillWithJunction(game, posMsPacman, strategy.getPillTargets(game, true));
+		safePowerPillWithJunction = strategy.getSafePillWithJunction(game, posMsPacman, strategy.getPowePillTargets(game, true));
 		safeEscapeNode = strategy.getSafePillWithJunction(game, posMsPacman, strategy.getPillTargets(game, false));
 		
 //		safePills = strategy.getSafePill(game, posMsPacman);
@@ -89,7 +90,7 @@ public class GreedyMsPacMan extends Controller<MOVE>
 		utility1 = heuristic1(game, moves);
 		utility0 = heuristic0(game, moves);	
 		if(utility0[0] > utility1[0]) {
-			System.out.println("heur0 won " + utility0[0] + " move: " + moves[utility0[1]]);
+//			System.out.println("heur0 won " + utility0[0] + " move: " + moves[utility0[1]]);
 			myMove = moves[utility0[1]];
 		}
 		else {
@@ -134,6 +135,7 @@ public class GreedyMsPacMan extends Controller<MOVE>
 //					move == game.getNextMoveAwayFromTarget(current, game.getGhostInitialNodeIndex(), DM.PATH)) {
 //				score.add(75);
 //			}
+			
 			if(safePillWithJunction != -1 && closestGhostDistance > 2*MIN_DISTANCE &&
 					move == game.getNextMoveTowardsTarget(current, safePillWithJunction, DM.PATH)) {
 				score.add(50);
@@ -156,9 +158,12 @@ public class GreedyMsPacMan extends Controller<MOVE>
 ////				GameView.addPoints(game,Color.gray, game.getShortestPath(current, greedyPill));
 //			}
 			// Escape to a node with 2 junctions available to reach
-			if(safeEscapeNode != -1 && move == game.getNextMoveTowardsTarget(current, safeEscapeNode, DM.PATH)) 
-			{
+			if(safeEscapeNode != -1 && move == game.getNextMoveTowardsTarget(current, safeEscapeNode, DM.PATH)) {
 				score.add(30);
+			}
+			if(greedyPill != -1 && move == game.getNextMoveTowardsTarget(current, greedyPill, DM.PATH)) {
+				score.add(20);
+//				GameView.addPoints(game,Color.gray, game.getShortestPath(current, greedyPill));
 			}
 			if(score.isEmpty()) {
 				score.add(0);
@@ -201,10 +206,11 @@ public class GreedyMsPacMan extends Controller<MOVE>
 		GHOST closestGhost, edibleGhost;
 		
 		// check if MsPacMan is chased
-		boolean chased = false;
-		if(strategy.isMsPacManChased(game.getPacmanCurrentNodeIndex(), game) >= 2) {
-			chased = true;
-		} 
+		int chasers = strategy.isMsPacManChased(game.getPacmanCurrentNodeIndex(), game);
+//		boolean chased = false;
+//		if(strategy.isMsPacManChased(game.getPacmanCurrentNodeIndex(), game) >= 2) {
+//			chased = true;
+//		} 
 		
 		int closestSafePill = aStarPills[0];
 		int furthestSafePill = aStarPills[1];
@@ -238,11 +244,12 @@ public class GreedyMsPacMan extends Controller<MOVE>
 			// MsPacman is chased and tries to fool the ghosts with the trap
 //			if(chased) {
 				// Sto checksafechase vediamo se lo possiamo eliminare definitivamente
-				if(chased && trapPowerPill != -1 && strategy.checkSafeChase(trapPowerPill, current, game) &&
-					move == game.getNextMoveTowardsTarget(current, trapPowerPill, DM.PATH)) {
-//					GameView.addPoints(game, Color.orange, game.getShortestPath(current, trapPowerPill));
-					score.add(235);
-				}
+//			System.out.println("Chasers "+chasers+" trap "+trapPowerPill+" safe pill "+safePillWithJunction);
+			if(chasers >= 3 && trapPowerPill != -1 && strategy.checkSafeChase(trapPowerPill, current, game) &&
+				move == game.getNextMoveTowardsTarget(current, trapPowerPill, DM.PATH)) {
+//				GameView.addPoints(game, Color.orange, game.getShortestPath(current, trapPowerPill));
+				score.add(235);
+			}
 ////				THIS MAY BE REDUNDANT, PARTIALLY COVERED IN RUNAWAY, BUT ONLY WHEN THE CLOSEST GHOST IS CLOSE
 //				// MsPacMan is chased, no need to go towards safe or greedily safe pills, it is enough to stay far from
 //				// ghosts (???)
@@ -261,27 +268,54 @@ public class GreedyMsPacMan extends Controller<MOVE>
 			if(closestGhost != null && game.getShortestPathDistance(current, game.getGhostCurrentNodeIndex(closestGhost)) < MIN_DISTANCE) {	
 				// se usiamo il pill safe di A* (quello più lontano, inizia a fare giro giro tondo contro gli aggressive)
 				// usare invece il più vicino potrebbe essere pericoloso per fuggire (???)
-				if(greedySafePill != -1 && strategy.checkSafeChase(greedySafePill, current, game) &&
-						move == game.getNextMoveTowardsTarget(current, greedySafePill, DM.PATH)) {
-//					GameView.addPoints(game, Color.yellow, game.getShortestPath(current, greedySafePill));
-					score.add(195);
+//				GameView.addPoints(game, Color.magenta, safePillWithJunction);
+//				GameView.addPoints(game, Color.blue, safePowerPillWithJunction);
+//				GameView.addPoints(game, Color.red, greedySafePill);
+				if(chasers >= 3) {
+					if(safePillWithJunction != -1) 
+						System.out.println("SafePill "+safePillWithJunction+" "+strategy.checkSafeChase(safePillWithJunction, current, game));
+					if(safePowerPillWithJunction != -1) 
+						System.out.println("SafePill "+safePowerPillWithJunction+" "+strategy.checkSafeChase(safePowerPillWithJunction, current, game));
+					if(safePillWithJunction != -1 && strategy.checkSafeChase(safePillWithJunction, current, game) &&
+							move == game.getNextMoveTowardsTarget(current, safePillWithJunction, DM.PATH)) {
+						score.add(197);
+					}
+					else if(safePowerPillWithJunction != -1 && strategy.checkSafeChase(safePowerPillWithJunction, current, game) &&
+							move == game.getNextMoveTowardsTarget(current, safePowerPillWithJunction, DM.PATH)) {
+						score.add(196);
+					}
+//					else if(greedySafePill != -1 && strategy.checkSafeChase(greedySafePill, current, game) &&
+//							move == game.getNextMoveTowardsTarget(current, greedySafePill, DM.PATH)) {
+//						score.add(196);
+//					}
 				}
+//				if(chasers >= 3 && safePillWithJunction != -1 && 
+//						strategy.checkSafeChase(safePillWithJunction, current, game) &&
+//						move == game.getNextMoveTowardsTarget(current, safePillWithJunction, DM.PATH)) {
+//					score.add(196);
+//					GameView.addPoints(game, Color.green, game.getShortestPath(current, safePillWithJunction));
+//				}
+//				else if(chasers >= 3 && greedySafePill != -1 && strategy.checkSafeChase(greedySafePill, current, game) &&
+//						move == game.getNextMoveTowardsTarget(current, greedySafePill, DM.PATH)) {
+//					GameView.addPoints(game, Color.yellow, game.getShortestPath(current, greedySafePill));
+//					score.add(195);
+//				}
 				// use as anchor point to run away a safe junction
 				// usare la junct più vicina o la più lontana???
-				else if(furthestSafeJunction != -1 && 
-						move == game.getNextMoveTowardsTarget(current, furthestSafeJunction, DM.PATH)) {
+//				if(furthestSafeJunction != -1 && 
+//						move == game.getNextMoveTowardsTarget(current, furthestSafeJunction, DM.PATH)) {
 //					GameView.addPoints(game, Color.orange, game.getShortestPath(current, furthestSafeJunction));
-					score.add(193);
-				}
+//					score.add(193);
+//				}
 				// use as anchor point to run away an emergency point in the map
 				// Questo è il punto più delicato, sia con A* che con implementazione greedy (getEmergencyWay) spesso 
 				// non si riesce a fuggire, o perché prende una strada che va nei ghost (il che può anche verificarsi) o perché
 				// la strada c'è e ti salverebbe ma comincia a rincoglionirsi sul posto anziché seguirla
-//				else if(greedySafeIndex != -1 &&
-//						move == game.getNextMoveTowardsTarget(current, greedySafeIndex, DM.PATH)) {
-//					score.add(191);
-////					GameView.addPoints(game, Color.magenta, game.getShortestPath(current, greedySafeIndex));
-//				}
+				if(greedySafeIndex != -1 &&
+						move == game.getNextMoveTowardsTarget(current, greedySafeIndex, DM.PATH)) {
+					score.add(191);
+					GameView.addPoints(game, Color.red, game.getShortestPath(current, greedySafeIndex));
+				}
 				// there is no better choice than just going away from the closest ghost (very likely to die in this case)
 				// Sta roba va evitata come la peste, ci serve un caso bucket come quello del pill nella heur0
 				else if(move == game.getNextMoveAwayFromTarget(current, game.getGhostCurrentNodeIndex(closestGhost), DM.PATH)) {
