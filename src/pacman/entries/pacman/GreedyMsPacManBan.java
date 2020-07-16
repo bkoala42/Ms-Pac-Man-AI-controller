@@ -185,19 +185,20 @@ public class GreedyMsPacManBan extends Controller<MOVE>
 		int chasers = strategy.isMsPacManChased(game.getPacmanCurrentNodeIndex(), game);
 //		
 		// power pill to chase to trap the ghosts and eat them in sequence
-		int trapPowerPill = strategy.trapTheGhosts(game, current, strategy.getPowePillTargets(game, true));
+		int trapPowerPill = -1;
 		// a star safe pill search used for walk around with ghosts
 //		int safePill = strategy.getSafeEscapeToPillWithJunction(game, current, strategy.getAllTargets(game, true), banned);
-		boolean safePill = false;
-		int farthestJunction = strategy.getSafeEscapeToFarthestJunction(game, current, banned);
+		int safePill = -1;
+		int farthestJunction = -1;
 		int eatPill = -1;
-//		int eatPill = strategy.eatPills(game, current, strategy.getAllTargets(game, true));
 		int greedySafeIndex = strategy.getGreedySafeTarget(game, current, true, strategy.getAllTargets(game, false));
 		
-		
 		for(MOVE move: moves) {
-			eatPill = strategy.eatPills(game, game.getNeighbour(current, move), strategy.getAllTargets(game, true));
+			trapPowerPill = strategy.trapTheGhosts(game, current, strategy.getPowePillTargets(game, true));
+			farthestJunction = strategy.getSafeEscapeToClosestJunction(game, current, banned);
 			safePill = strategy.getSafeEscapeToPillWithJunction(game, current, strategy.getAllTargets(game, true), banned, move);
+			greedySafeIndex = strategy.getGreedySafeTarget(game, current, true, strategy.getAllTargets(game, false));
+			
 			ArrayList<Integer> score = new ArrayList<Integer>();
 			// find the most "interesting" ghosts that are available
 			closestGhost = strategy.getCloserGhost(game, current);
@@ -218,19 +219,21 @@ public class GreedyMsPacManBan extends Controller<MOVE>
 //				System.out.println(chasers);
 				if(chasers > 3) {
 					// it's the Aggressive ghost team, then go for a walk and eat pills in the zone
+					eatPill = strategy.eatPills(game, current, strategy.getAllTargets(game, true));
 					if(eatPill != -1 
 //							&& strategy.checkSafeChase(eatPill, current, game)
 							&& move == game.getNextMoveTowardsTarget(current, eatPill, DM.PATH)
+							&& move != game.getPacmanLastMoveMade()
 							) {
 						GameView.addPoints(game,Color.magenta, eatPill);
 						score.add(199);
 					}
 				}
-				if(safePill 
+				if(safePill != -1
 //						&& strategy.checkSafeChase(safePill, current, game)
-//						&& move == game.getNextMoveTowardsTarget(current, safePill, DM.PATH)
+						&& move == game.getNextMoveTowardsTarget(current, safePill, DM.PATH)
 						) {
-//					GameView.addPoints(game,Color.cyan, safePill);
+					GameView.addPoints(game,Color.red, safePill);
 					score.add(198);
 				}
 				
@@ -248,7 +251,7 @@ public class GreedyMsPacManBan extends Controller<MOVE>
 				if(trapPowerPill != -1 
 //						&& strategy.checkSafeChase(trapPowerPill, current, game) 
 						&& move == game.getNextMoveTowardsTarget(current, trapPowerPill, DM.PATH)) {
-					GameView.addPoints(game,Color.blue, game.getShortestPath(current, trapPowerPill));
+					GameView.addPoints(game,Color.orange, game.getShortestPath(current, trapPowerPill));
 					score.add(195);
 				}
 //				if(safeEscapeNode != -1
@@ -259,7 +262,7 @@ public class GreedyMsPacManBan extends Controller<MOVE>
 				if(farthestJunction != -1 
 //						&& strategy.checkSafeChase(farthestJunction, current, game) 
 						&& move == game.getNextMoveTowardsTarget(current, farthestJunction, DM.PATH)) {
-					GameView.addPoints(game, Color.yellow, farthestJunction);
+					GameView.addPoints(game, Color.yellow, game.getShortestPath(current, farthestJunction));
 					score.add(193);
 				}
 //				if(farthestSafeIndex != -1 
@@ -270,7 +273,7 @@ public class GreedyMsPacManBan extends Controller<MOVE>
 //				}
 				else if(greedySafeIndex != -1 
 						&& move == game.getNextMoveTowardsTarget(current, greedySafeIndex, DM.PATH)) {
-					GameView.addPoints(game,Color.blue, greedySafeIndex);
+					GameView.addPoints(game,Color.blue, game.getShortestPath(current, greedySafeIndex));
 					score.add(182);
 				}
 			}
