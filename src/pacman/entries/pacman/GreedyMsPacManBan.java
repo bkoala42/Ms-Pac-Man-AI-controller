@@ -27,7 +27,7 @@ public class GreedyMsPacManBan extends Controller<MOVE>
 	
 	private GreedyMsPacManStrategyBan strategy;
 	private int greedySafePill, greedyPill, greedySafeIndex, greedyIndex, safePillWithJunction, safeEscapeNode, safePowerPillWithJunction;
-	private int banned;
+	private int banned, eatenPowerPill;
 	
 	public GreedyMsPacManBan() {
 		this.strategy = new GreedyMsPacManStrategyBan();
@@ -174,12 +174,17 @@ public class GreedyMsPacManBan extends Controller<MOVE>
 		if (game.isJunction(current)) {
 			banned = current;
 		}
+		if(game.wasPowerPillEaten()) {
+			eatenPowerPill = game.getNeighbour(current,game.getPacmanLastMoveMade().opposite());
+//			System.out.println(game.isPowerPillStillAvailable(eatenPowerPill));
+		}
 		
 		// ghost targets to take care of
 		GHOST closestGhost, edibleGhost;
 		
 		// check if MsPacMan is chased
 		int chasers = strategy.isMsPacManChased(current, game);
+		System.out.println("N° of chasers: "+ chasers);
 //		
 		// power pill to chase to trap the ghosts and eat them in sequence
 		int trapPowerPill = -1;
@@ -208,9 +213,12 @@ public class GreedyMsPacManBan extends Controller<MOVE>
 			edibleGhost = strategy.isThereEdibleGhost(game, current);
 			
 			// There is a safely edible ghost, go and catch it
-			if(edibleGhost != null
-					&& move == game.getNextMoveTowardsTarget(current, game.getGhostCurrentNodeIndex(edibleGhost), DM.PATH)) {
-				score.add(200);
+			if(edibleGhost != null) {
+				int pillLeft = strategy.cleanCorners(game, current, strategy.getPillTargets(game, true), eatenPowerPill);
+				if(pillLeft != -1 && move == game.getNextMoveTowardsTarget(current, pillLeft, DM.PATH))
+					score.add(201);
+				else if(move == game.getNextMoveTowardsTarget(current, game.getGhostCurrentNodeIndex(edibleGhost), DM.PATH))
+					score.add(200);
 //				GameView.addPoints(game, Color.green, game.getShortestPath(current, game.getGhostCurrentNodeIndex(edibleGhost)));
 			}
 			
@@ -219,7 +227,6 @@ public class GreedyMsPacManBan extends Controller<MOVE>
 //			System.out.println("Eat pill "+eatPill+" safePill "+safePill+" junct "+farthestJunction+" index "+optSafeIndex+" last index "+farthestSafeIndex);
 			if(closestGhost != null && game.getShortestPathDistance(current, game.getGhostCurrentNodeIndex(closestGhost)) <= 2*MIN_DISTANCE) {
 //				GameView.addPoints(game, Color.lightGray, game.getShortestPath(current, game.getGhostCurrentNodeIndex(closestGhost)));
-				System.out.println("chasers: "+ chasers);
 				if(chasers > 3) {
 					// it's the Aggressive ghost team, then go for a walk and eat pills in the zone
 					eatPill = strategy.eatPills(game, current, strategy.getAllTargets(game, true), banned);

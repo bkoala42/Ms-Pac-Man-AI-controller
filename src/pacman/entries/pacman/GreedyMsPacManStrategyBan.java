@@ -17,18 +17,18 @@ import java.util.stream.Collectors;
 
 import pacman.game.Constants.DM;
 import pacman.game.Constants.GHOST;
-import pacman.game.Constants.MOVE;
 
 public class GreedyMsPacManStrategyBan {
 	
 	private static final int CHASE_DISTANCE = 50;
 	private static final int GUARD_DISTANCE = 5;
 	private static final int MIN_DISTANCE = 20;
+	private static final int CLEAN_DISTANCE = 20;
 	
 	/**
 	 * Get the indices of pills in the map
 	 * @param game game manager instance
-	 * @param available if true get map indices of availble pills, oterwise any pill
+	 * @param available if true get map indices of availble pills, otherwise any pill
 	 * @return pill indices
 	 */
 	public int[] getPillTargets(Game game, boolean available) {
@@ -54,7 +54,7 @@ public class GreedyMsPacManStrategyBan {
 	/**
 	 * Get the indices of power pills in the map
 	 * @param game game manager instance
-	 * @param available if true get map indices of availble power pills, oterwise any power pill
+	 * @param available if true get map indices of available power pills, otherwise any power pill
 	 * @return power pill indices
 	 */
 	public int[] getPowePillTargets(Game game, boolean available) {
@@ -122,7 +122,7 @@ public class GreedyMsPacManStrategyBan {
 				dist = game.getShortestPathDistance(pos, junct);
 			for(GHOST ghost : GHOST.values()) { 
 				if(game.getGhostEdibleTime(ghost) < 30 && game.getGhostLairTime(ghost)==0) {
-					// a non edible ghost is too close to the considered juction
+					// a non edible ghost is too close to the considered junction
 					if(dist+GUARD_DISTANCE > 
 						game.getShortestPathDistance(game.getGhostCurrentNodeIndex(ghost), junct, game.getGhostLastMoveMade(ghost))
 //						|| dist+GUARD_DISTANCE >
@@ -500,6 +500,56 @@ public class GreedyMsPacManStrategyBan {
 		return returnValue;
 	}
 	
+	public int cleanCorners(Game game, int pos, int[] targets, int indexPowerPill) {
+		int dist = 0, pill = -1, maxPill = -1;
+		double distToPowerpill = 0;
+		double minDistance = Integer.MAX_VALUE, maxDistance = Integer.MIN_VALUE;
+		
+		if(targets.length != 0) {
+			for(int target: targets) {
+//				dist = game.getShortestPathDistance(pos, target);
+				distToPowerpill = game.getEuclideanDistance(indexPowerPill, target);
+				if(distToPowerpill < CLEAN_DISTANCE) {
+//					for(GHOST ghost : GHOST.values()) { 
+//						if(game.getGhostEdibleTime(ghost) < 30 && game.getGhostLairTime(ghost)==0) {
+							// NB NOT SURE IF WE NEED IT
+							// check if ms pacman reaches before the ghost
+//							if(dist+GUARD_DISTANCE <
+//								    game.getShortestPathDistance(game.getGhostCurrentNodeIndex(ghost), target, game.getGhostLastMoveMade(ghost))
+//								) {
+//								minDistanceJunction = Integer.MAX_VALUE; closestJunct = -1;
+//								for(int junct: junctions) {
+//									int w = game.getShortestPathDistance(target, junct, game.getPacmanLastMoveMade());
+//									if(w < minDistanceJunction && junct != banned) {
+//										minDistanceJunction = w;
+//										closestJunct = junct;
+//									}
+//										
+//								}
+								if(distToPowerpill < minDistance 
+//										&& game.getShortestPathDistance(game.getGhostCurrentNodeIndex(ghost), closestJunct) > 
+//								game.getShortestPathDistance(pos, closestJunct, game.getPacmanLastMoveMade())+GUARD_DISTANCE
+										) {
+									pill = target;
+									minDistance = distToPowerpill;
+//									escapeJunct = closestJunct;
+								}
+								if(distToPowerpill > maxDistance) {
+									maxDistance = distToPowerpill;
+									maxPill = target;
+								}
+//							}
+//						}
+//					}
+				}
+			}
+		}
+		if(maxPill != -1)
+			GameView.addLines(game,Color.CYAN,pos,maxPill);
+//		System.out.println("max distance: "+maxDistance);
+		return pill;
+	}
+	
 	
 	
 	
@@ -779,7 +829,7 @@ public class GreedyMsPacManStrategyBan {
 		
 		// check if ghosts are chasing MsPacman
 		if(maxGhost != null) {
-			System.out.println(game.getShortestPathDistance(game.getGhostCurrentNodeIndex(maxGhost), pos, game.getGhostLastMoveMade(maxGhost)));
+			System.out.println("Max ghost chaser distance: "+game.getShortestPathDistance(game.getGhostCurrentNodeIndex(maxGhost), pos, game.getGhostLastMoveMade(maxGhost)));
 			chasers++;
 			// Careful: may happen some ghosts on the same index of the max ghost
 			for(GHOST ghost: GHOST.values()){
