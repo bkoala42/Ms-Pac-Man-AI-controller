@@ -34,14 +34,6 @@ public class GreedyMsPacManBan extends Controller<MOVE>
 	}
 	
 	public MOVE getMove(Game game, long timeDue) {
-		// COLOR LEGEND:
-		// - light gray, path to the "greedily safe" closest pill in heuristic0
-		// - orange, path to the trap power pill in heuristic1
-		// - cyan, path to the "greedily safe" closest pill in heuristic1 when chased
-		// - green, path to the ghost to eat
-		// - red, path to the "greedily safe" closest pill in heuristic1 when running away
-		// - yellow, path to the closest safe junction in heuristic1 when running away
-		// - magenta, path to the emergency index in heuristic1 when running away
 		long startTime = java.lang.System.currentTimeMillis();
 		
 		
@@ -196,7 +188,6 @@ public class GreedyMsPacManBan extends Controller<MOVE>
 		int safePill = -1; int safeNodeEscape = -1;
 		int farthestJunction = -1;
 		int eatPill = -1;
-//		int greedySafeIndex = strategy.getGreedySafeTarget(game, current, true, strategy.getAllTargets(game, false));
 		
 		for(MOVE move: moves) {
 			trapPowerPill = strategy.trapTheGhosts(game, current, strategy.getPowePillTargets(game, true));
@@ -208,6 +199,8 @@ public class GreedyMsPacManBan extends Controller<MOVE>
 				farthestJunction = strategy.getSafeEscapeToClosestJunction(game, current, banned);
 			}
 			// ***********************
+//			System.out.println("Greedy "+greedySafeIndex+" junct "+farthestJunction);
+			
 			
 			ArrayList<Integer> score = new ArrayList<Integer>();
 			// find the most "interesting" ghosts that are available
@@ -221,20 +214,20 @@ public class GreedyMsPacManBan extends Controller<MOVE>
 				GameView.addPoints(game, Color.green, game.getShortestPath(current, game.getGhostCurrentNodeIndex(edibleGhost)));
 			}
 			
-//			System.out.println(farthestSafeIndex);
+//			
 			// Escape from ghosts
 //			System.out.println("Eat pill "+eatPill+" safePill "+safePill+" junct "+farthestJunction+" index "+optSafeIndex+" last index "+farthestSafeIndex);
 			if(closestGhost != null && game.getShortestPathDistance(current, game.getGhostCurrentNodeIndex(closestGhost)) <= 2*MIN_DISTANCE) {
-//				GameView.addPoints(game, Color.lightGray, game.getShortestPath(current, game.getGhostCurrentNodeIndex(closestGhost)));
-				System.out.println("chasers: "+ chasers);
+				GameView.addPoints(game, Color.lightGray, game.getShortestPath(current, game.getGhostCurrentNodeIndex(closestGhost)));
+//				System.out.println("chasers: "+ chasers);
 				if(chasers > 3) {
 					// it's the Aggressive ghost team, then go for a walk and eat pills in the zone
 					eatPill = strategy.eatPills(game, current, strategy.getAllTargets(game, true));
-					System.out.println("eat pill: "+eatPill);
+//					System.out.println("eat pill: "+eatPill);
 					if(eatPill != -1 
 							&& move == game.getNextMoveTowardsTarget(current, eatPill, DM.PATH)
 							) {
-						GameView.addPoints(game,Color.magenta, eatPill);
+//						GameView.addPoints(game,Color.magenta, eatPill);
 						score.add(199);
 					}
 				}
@@ -260,7 +253,7 @@ public class GreedyMsPacManBan extends Controller<MOVE>
 				if(trapPowerPill != -1 
 //						&& strategy.checkSafeChase(trapPowerPill, current, game) 
 						&& move == game.getNextMoveTowardsTarget(current, trapPowerPill, DM.PATH)) {
-					GameView.addPoints(game,Color.DARK_GRAY, game.getShortestPath(current, trapPowerPill));
+//					GameView.addPoints(game,Color.DARK_GRAY, game.getShortestPath(current, trapPowerPill));
 					score.add(195);
 				}
 //				if(safeEscapeNode != -1
@@ -282,7 +275,7 @@ public class GreedyMsPacManBan extends Controller<MOVE>
 				
 				else if(greedySafeIndex != -1 
 						&& move == game.getNextMoveTowardsTarget(current, greedySafeIndex, DM.PATH)) {
-//					GameView.addPoints(game,Color.blue, game.getShortestPath(current, greedySafeIndex));
+					GameView.addPoints(game,Color.blue, game.getShortestPath(current, greedySafeIndex));
 					score.add(182);
 				}
 			}
@@ -305,10 +298,10 @@ public class GreedyMsPacManBan extends Controller<MOVE>
 		// compare the results of the moves
 		int tmp = Integer.MIN_VALUE;
 		for(Integer moveIndex: movesScore.keySet()) {
-			if(movesScore.get(moveIndex) == tmp && moves[moveIndex] == game.getPacmanLastMoveMade()) {
-				tmp = movesScore.get(moveIndex);
-				bestMove = moveIndex;
-			}
+//			if(movesScore.get(moveIndex) == tmp && moves[moveIndex] == game.getPacmanLastMoveMade()) {
+//				tmp = movesScore.get(moveIndex);
+//				bestMove = moveIndex;
+//			}
 			if(movesScore.get(moveIndex) > tmp) {
 				tmp = movesScore.get(moveIndex);
 				bestMove = moveIndex;
