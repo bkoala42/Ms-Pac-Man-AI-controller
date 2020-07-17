@@ -137,11 +137,11 @@ public class GreedyMsPacManStrategyBan {
 				safeJunctions.add(junct);
 			}
 		}
-//		Visualize safe junctions
-		int[] safeNodes=new int[safeJunctions.size()];		
-		for(int i=0;i<safeNodes.length;i++)
-			safeNodes[i]=safeJunctions.get(i);
-		GameView.addPoints(game,Color.pink, safeNodes);
+//		// Visualize safe junctions
+//		int[] safeNodes=new int[safeJunctions.size()];		
+//		for(int i=0;i<safeNodes.length;i++)
+//			safeNodes[i]=safeJunctions.get(i);
+//		GameView.addPoints(game,Color.pink, safeNodes);
 		
 		return safeJunctions;
 	}
@@ -245,7 +245,7 @@ public class GreedyMsPacManStrategyBan {
 		
 		int pillWay = -1;
 		if(safeClosestJunction != -1 && safePillWithJuncts != -1) {
-			GameView.addPoints(game, Color.cyan, chosenPath);
+//			GameView.addPoints(game, Color.cyan, chosenPath);
 			
 			if(chosenPath.length != 0 && chosenPath[0] != -1)
 				pillWay = chosenPath[0];
@@ -267,11 +267,11 @@ public class GreedyMsPacManStrategyBan {
 //			System.out.println("Junct: "+safeClosestJunction);
 //			System.out.println("Pill: "+safePillWithJuncts);
 //		}
-		if(pillWay != -1)
-			GameView.addPoints(game, Color.red, pillWay);
+//		if(pillWay != -1)
+//			GameView.addPoints(game, Color.red, pillWay);
 //		System.out.println(pillWay+"\t"+safeClosestJunction+"\t"+safePillWithJuncts);
 		
-		return safePillWithJuncts;
+		return pillWay;
 	}
 	
 	public int getSafeEscapeToClosestJunction(Game game, int pos, int bannedNode) {
@@ -297,7 +297,7 @@ public class GreedyMsPacManStrategyBan {
 		if(safeFarthestJunction != -1)
 			 path = game.getShortestPath(pos, safeFarthestJunction);
 		if(path != null && path.length != 0) {
-			GameView.addPoints(game, Color.yellow, path);
+//			GameView.addPoints(game, Color.yellow, path);
 			returnValue = path[0];
 		}
 
@@ -327,24 +327,25 @@ public class GreedyMsPacManStrategyBan {
 							if(game.getGhostEdibleTime(ghost) < 30 && game.getGhostLairTime(ghost)==0) {
 								// first check if mspacman can reach the pill before a ghost, then check if
 								// a non edible ghost is too close to the considered juction
-								if(dist+2*GUARD_DISTANCE > game.getShortestPathDistance(game.getGhostCurrentNodeIndex(ghost), target, game.getGhostLastMoveMade(ghost))
-								&& (dist+game.getShortestPathDistance(target, junct)+GUARD_DISTANCE > 
-									game.getShortestPathDistance(game.getGhostCurrentNodeIndex(ghost), junct, game.getGhostLastMoveMade(ghost)))
+								if(dist+GUARD_DISTANCE > game.getShortestPathDistance(game.getGhostCurrentNodeIndex(ghost), target, game.getGhostLastMoveMade(ghost))
+										&& dist+game.getShortestPathDistance(target, junct)+GUARD_DISTANCE > 
+										game.getShortestPathDistance(game.getGhostCurrentNodeIndex(ghost), junct, game.getGhostLastMoveMade(ghost))
+										&& dist+GUARD_DISTANCE > game.getShortestPathDistance(game.getGhostCurrentNodeIndex(ghost), pos, game.getGhostLastMoveMade(ghost))
 									) {
 									safeJunct = false;
 								}
 								// this junction is a safe place, get the best way to reach it if no ghosts are in the path
-								else {
-									path = game.getShortestPath(pos, junct);
-									for(int elem: path) {
-										// check if in the path there is a ghost
-										for(GHOST ghost2 : GHOST.values()) {
-											if(elem == game.getGhostCurrentNodeIndex(ghost2)) {
-												safeJunct = false;
-											}
-										}
-									}
-								}
+//								else {
+//									path = game.getShortestPath(pos, junct);
+//									for(int elem: path) {
+//										// check if in the path there is a ghost
+//										for(GHOST ghost2 : GHOST.values()) {
+//											if(elem == game.getGhostCurrentNodeIndex(ghost2)) {
+//												safeJunct = false;
+//											}
+//										}
+//									}
+//								}
 								if(!checkSafeChase(target, pos, game))
 									safeJunct = false;
 							}
@@ -364,12 +365,14 @@ public class GreedyMsPacManStrategyBan {
 				}
 			}
 		}
-//		// Visualize safe junctions
+		
+		// Visualize safe junctions
 //		int[] safeNodes=new int[chosenNodeSafeJunctions.size()];		
 //		for(int i=0;i<safeNodes.length;i++)
 //			safeNodes[i]=chosenNodeSafeJunctions.get(i);
 //		GameView.addPoints(game,Color.pink, safeNodes);
 		
+		GameView.addPoints(game,Color.blue, safePillWithJuncts);
 		return safePillWithJuncts;
 	}
 	
@@ -443,14 +446,11 @@ public class GreedyMsPacManStrategyBan {
 		return safeTargets;
 	}
 	
-	
-	 
-	
-	
-	
-	public int eatPills(Game game, int pos, int[] targets) {
-		int dist = 0, minDist = Integer.MAX_VALUE, pill = -1;
-		int minDistance = Integer.MAX_VALUE, maxDistance = Integer.MIN_VALUE;
+
+	public int eatPills(Game game, int pos, int[] targets, int banned) {
+		int dist = 0, minDist = Integer.MAX_VALUE, pill = -1, closestJunct = -1, escapeJunct = -1;
+		int minDistance = Integer.MAX_VALUE, maxDistance = Integer.MIN_VALUE; int minDistanceJunction = Integer.MAX_VALUE;
+		int[] junctions = game.getJunctionIndices(); 
 		
 		if(targets.length != 0) {
 			for(int target: targets) {
@@ -459,18 +459,29 @@ public class GreedyMsPacManStrategyBan {
 					for(GHOST ghost : GHOST.values()) { 
 						if(game.getGhostEdibleTime(ghost) < 30 && game.getGhostLairTime(ghost)==0) {
 							// check if ms pacman reaches before the ghost
-							if(dist+GUARD_DISTANCE < 
-									game.getShortestPathDistance(game.getGhostCurrentNodeIndex(ghost), pos, game.getGhostLastMoveMade(ghost))
-							   && dist+GUARD_DISTANCE <
+							if(dist+GUARD_DISTANCE <
 								    game.getShortestPathDistance(game.getGhostCurrentNodeIndex(ghost), target, game.getGhostLastMoveMade(ghost))
+//									&& dist+GUARD_DISTANCE < 
+//									game.getShortestPathDistance(game.getGhostCurrentNodeIndex(ghost), pos, game.getGhostLastMoveMade(ghost))
 								) {
-								
-								if(dist < minDistance
+								minDistanceJunction = Integer.MAX_VALUE; closestJunct = -1;
+								for(int junct: junctions) {
+									int w = game.getShortestPathDistance(target, junct, game.getPacmanLastMoveMade());
+									if(w < minDistanceJunction && junct != banned) {
+										minDistanceJunction = w;
+										closestJunct = junct;
+									}
+										
+								}
+								if(dist < minDistance 
+										&& game.getShortestPathDistance(game.getGhostCurrentNodeIndex(ghost), closestJunct) > 
+								game.getShortestPathDistance(pos, closestJunct, game.getPacmanLastMoveMade())+GUARD_DISTANCE
 //										&& game.getShortestPathDistance(game.getGhostCurrentNodeIndex(getCloserGhost(game, pos)), target) >= maxDistance
 //										&& checkSafeChase(target, pos, game)
 										) {
 									pill = target;
 									minDistance = dist;
+									escapeJunct = closestJunct;
 								}
 							}
 						}
@@ -483,6 +494,7 @@ public class GreedyMsPacManStrategyBan {
 		if(pill != -1) {
 			returnValue = game.getShortestPath(pos, pill, game.getPacmanLastMoveMade())[0];
 			GameView.addPoints(game, Color.magenta, game.getShortestPath(pos, pill, game.getPacmanLastMoveMade()));
+			GameView.addPoints(game, Color.yellow, escapeJunct);
 		}
 
 		return returnValue;
@@ -767,7 +779,7 @@ public class GreedyMsPacManStrategyBan {
 		
 		// check if ghosts are chasing MsPacman
 		if(maxGhost != null) {
-//			System.out.println(game.getShortestPathDistance(game.getGhostCurrentNodeIndex(maxGhost), pos, game.getGhostLastMoveMade(maxGhost)));
+			System.out.println(game.getShortestPathDistance(game.getGhostCurrentNodeIndex(maxGhost), pos, game.getGhostLastMoveMade(maxGhost)));
 			chasers++;
 			// Careful: may happen some ghosts on the same index of the max ghost
 			for(GHOST ghost: GHOST.values()){
@@ -775,7 +787,7 @@ public class GreedyMsPacManStrategyBan {
 					chasers++;
 			}
 			int[] path = game.getShortestPath(game.getGhostCurrentNodeIndex(maxGhost), pos, game.getGhostLastMoveMade(maxGhost));
-			GameView.addPoints(game, Color.PINK, path);
+//			GameView.addPoints(game, Color.PINK, path);
 			for(int i: path) {
 				for(GHOST ghost: GHOST.values()) {
 //					System.out.println(i+"\t"+game.getGhostCurrentNodeIndex(ghost)+"\t"+ghost);
