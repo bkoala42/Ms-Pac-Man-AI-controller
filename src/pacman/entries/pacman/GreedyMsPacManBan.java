@@ -184,7 +184,7 @@ public class GreedyMsPacManBan extends Controller<MOVE>
 		
 		// check if MsPacMan is chased
 		int chasers = strategy.isMsPacManChased(current, game);
-		System.out.println("N° of chasers: "+ chasers);
+//		System.out.println("N° of chasers: "+ chasers);
 //		
 		// power pill to chase to trap the ghosts and eat them in sequence
 		int trapPowerPill = -1;
@@ -194,19 +194,20 @@ public class GreedyMsPacManBan extends Controller<MOVE>
 		int farthestJunction = -1;
 		int eatPill = -1;
 		
+		trapPowerPill = strategy.trapTheGhosts(game, current, strategy.getPowePillTargets(game, true));
+		safePill = strategy.getSafeEscapeToPillWithJunction(game, current, strategy.getAllTargets(game, true), banned);
+		farthestJunction = strategy.getSafeEscapeToClosestJunction(game, current, banned);
+		greedySafeIndex = strategy.getGreedySafeTarget(game, current, true, strategy.getAllTargets(game, false));
+//		System.out.println(greedySafeIndex);
+//		// OTTIMIZZAZIONE ********
+//		if(safePill == -1) {
+//			greedySafeIndex = strategy.getGreedySafeTarget(game, current, true, strategy.getAllTargets(game, false));
+////			safeNodeEscape = strategy.getSafePillWithJunction(game, current, strategy.getAllTargets(game, false));
+////			farthestJunction = strategy.getSafeEscapeToClosestJunction(game, current, banned);
+//		}
+//		// ***********************
+		
 		for(MOVE move: moves) {
-			trapPowerPill = strategy.trapTheGhosts(game, current, strategy.getPowePillTargets(game, true));
-			safePill = strategy.getSafeEscapeToPillWithJunction(game, current, strategy.getAllTargets(game, true), banned);
-			// OTTIMIZZAZIONE ********
-			if(safePill == -1) {
-				greedySafeIndex = strategy.getGreedySafeTarget(game, current, true, strategy.getAllTargets(game, false));
-//				safeNodeEscape = strategy.getSafePillWithJunction(game, current, strategy.getAllTargets(game, false));
-				farthestJunction = strategy.getSafeEscapeToClosestJunction(game, current, banned);
-			}
-			// ***********************
-//			System.out.println("Greedy "+greedySafeIndex+" junct "+farthestJunction);
-			
-			
 			ArrayList<Integer> score = new ArrayList<Integer>();
 			// find the most "interesting" ghosts that are available
 			closestGhost = strategy.getCloserGhost(game, current);
@@ -230,37 +231,24 @@ public class GreedyMsPacManBan extends Controller<MOVE>
 				if(chasers > 3) {
 					// it's the Aggressive ghost team, then go for a walk and eat pills in the zone
 					eatPill = strategy.eatPills(game, current, strategy.getAllTargets(game, true), banned);
-					System.out.println("eat pill: "+eatPill);
+//					System.out.println("eat pill: "+eatPill);
 					if(eatPill != -1 
 							&& move == game.getNextMoveTowardsTarget(current, eatPill, DM.PATH)
 							) {
-//						GameView.addPoints(game,Color.magenta, eatPill);
+						GameView.addPoints(game,Color.magenta, eatPill);
 						score.add(199);
 					}
 				}
 				if(safePill != -1
-//						&& strategy.checkSafeChase(safePill, current, game)
 						&& move == game.getNextMoveTowardsTarget(current, safePill, DM.PATH)
 						) {
-//					GameView.addPoints(game,Color.red, safePill);
+					GameView.addPoints(game,Color.red, safePill);
 					score.add(198);
 				}
 				
-//				if(greedySafePill != -1 
-//						&& move == game.getNextMoveTowardsTarget(current, greedySafePill, DM.PATH)) {
-//					score.add(197);
-//					GameView.addPoints(game, Color.white, greedySafePill);
-//				}
-//				if(safePillWithJunction != -1 &&
-//						move == game.getNextMoveTowardsTarget(current, safePillWithJunction, DM.PATH)) {
-//					score.add(197);
-//					GameView.addPoints(game, Color.white, safePillWithJunction);
-//				}
-				
 				if(trapPowerPill != -1 
-//						&& strategy.checkSafeChase(trapPowerPill, current, game) 
 						&& move == game.getNextMoveTowardsTarget(current, trapPowerPill, DM.PATH)) {
-//					GameView.addPoints(game,Color.DARK_GRAY, game.getShortestPath(current, trapPowerPill));
+					GameView.addPoints(game, Color.orange, current, trapPowerPill);
 					score.add(195);
 				}
 //				if(safeEscapeNode != -1
@@ -271,18 +259,12 @@ public class GreedyMsPacManBan extends Controller<MOVE>
 				if(farthestJunction != -1 
 //						&& strategy.checkSafeChase(farthestJunction, current, game) 
 						&& move == game.getNextMoveTowardsTarget(current, farthestJunction, DM.PATH)) {
-//					GameView.addPoints(game, Color.orange, game.getShortestPath(game.getNeighbour(current, move), farthestJunction));
+					GameView.addPoints(game, Color.yellow, farthestJunction);
 					score.add(191);
 				}
-//				if(safeNodeEscape != -1 
-////						&& strategy.checkSafeChase(farthestSafeIndex, current, game)
-//						&& move == game.getNextMoveTowardsTarget(current, safeNodeEscape, DM.PATH)) {
-//					score.add(190);
-//				}
-				
-				else if(greedySafeIndex != -1 
+				if(greedySafeIndex != -1 
 						&& move == game.getNextMoveTowardsTarget(current, greedySafeIndex, DM.PATH)) {
-//					GameView.addPoints(game,Color.blue, game.getShortestPath(current, greedySafeIndex));
+					GameView.addPoints(game, Color.blue, greedySafeIndex);
 					score.add(182);
 				}
 			}
