@@ -370,7 +370,7 @@ public class GreedyMsPacManStrategyBan {
 	 * @return a pill index with junctions surrounding it
 	 */
 	public int getSafePillWithJunction(Game game, int pos, int[] targets) {
-		int dist = 0, junctDist = 0;
+		int dist = 0, junctDist = 0; double radiusDistance=0, junctRadiusDist = 0;
 		boolean safeJunct = true;
 		int minDistance = Integer.MAX_VALUE;
 		int safePillWithJuncts = -1;
@@ -381,14 +381,22 @@ public class GreedyMsPacManStrategyBan {
 		
 		for(int target: targets) {
 			safeJunctions.clear();
-			
+			dist = game.getShortestPathDistance(pos, target);
+			radiusDistance = game.getEuclideanDistance(pos, target);
+			if(radiusDistance < MIN_DISTANCE) {
+				GameView.addLines(game, Color.magenta, pos, target);
+				
 			for(int junct : junctions) {
 				safeJunct = true;
 				
-				dist = game.getShortestPathDistance(pos, target);
 				junctDist = game.getShortestPathDistance(target, junct);
+				junctRadiusDist = game.getEuclideanDistance(target, junct);
 				
 //				if(dist < MIN_DISTANCE && junctDist < MIN_DISTANCE) {
+				// This limit is too strict
+				if(junctRadiusDist > 2*MIN_DISTANCE)
+					safeJunct = false;
+				else {
 					for(GHOST ghost : GHOST.values()) { 
 						if(game.getGhostEdibleTime(ghost) == 0 && game.getGhostLairTime(ghost)==0) {
 							// 1. check if mspacman can reach the pill before a ghost
@@ -402,11 +410,8 @@ public class GreedyMsPacManStrategyBan {
 								break;
 							}
 						}
-					}
-					// This limit is too strict
-//					if(junctDist > MIN_DISTANCE)
-//						safeJunct = false;
-//				}
+					}	
+				}
 				if(safeJunct) {
 					safeJunctions.add(junct);
 				}
@@ -422,13 +427,17 @@ public class GreedyMsPacManStrategyBan {
 						chosenNodeSafeJunctions.add(e);
 				}	
 			}
+			}
 		}
 		
 		// Visualize safe junctions
 		int[] safeNodes=new int[chosenNodeSafeJunctions.size()];		
-		for(int i=0;i<safeNodes.length;i++)
+		for(int i=0;i<safeNodes.length;i++) {
 			safeNodes[i]=chosenNodeSafeJunctions.get(i);
+			GameView.addLines(game,Color.blue, pos, safeNodes[i]);
+		}
 //		GameView.addPoints(game,Color.pink, safeNodes);
+		
 		
 //		GameView.addPoints(game,Color.blue, safePillWithJuncts);
 		
@@ -506,6 +515,20 @@ public class GreedyMsPacManStrategyBan {
 
 		return returnValue;
 	}
+	
+	public int getClosestPill(Game game, int pos, int[] targets) {
+	    int minDistance = Integer.MAX_VALUE;
+	    int pill = -1;
+	    
+	    for(int target: targets) {
+	      if(game.getShortestPathDistance(pos, target) < minDistance) {
+	        minDistance = game.getShortestPathDistance(pos, target);
+	        pill = target;
+	      }
+	    }
+	    
+	    return pill;
+	  }
 	
 	public int cleanCorners(Game game, int pos, int[] targets, int indexPowerPill) {
 		int dist = 0, pill = -1, maxPill = -1;
