@@ -98,8 +98,8 @@ public class GreedyMsPacManBan extends Controller<MOVE>
 		
 		// Go to the available pill/power pill which is the farthest from the closest ghost and not reachable by the other ghosts.
 		// When this choice is not possible then get towards any safe point in the map that Ms PacMan can reach before ghosts
-		int greedyPill = -1, greedyIndex = -1;
-		greedyPill = strategy.getGreedySafeTarget(game, current, strategy.getAllTargets(game, true));
+		int greedyPill = -1;
+//		greedyPill = strategy.getGreedySafeTarget(game, current, strategy.getAllTargets(game, true));
 //		if(greedyPill == -1) 
 //			greedyIndex = strategy.getGreedySafeTarget(game, current, strategy.getAllTargets(game, false));
 		// Go to the available pill/power pill which is close to at least two junctions that Ms Pac-Man reaches before the ghosts.
@@ -246,15 +246,14 @@ public class GreedyMsPacManBan extends Controller<MOVE>
 						score.add(199);
 					}
 				}
-				if(safePill != -1 && move == game.getNextMoveTowardsTarget(current, safePill, DM.PATH)) {
-//					GameView.addPoints(game,Color.red, safePill);
-					score.add(198);
-				}
-				
-				if(trapPowerPill != -1 && move == game.getNextMoveTowardsTarget(current, trapPowerPill, DM.PATH)) {
-//					GameView.addPoints(game, Color.orange, current, trapPowerPill);
-					score.add(195);
-				}
+//				if(safePill != -1 && move == game.getNextMoveTowardsTarget(current, safePill, DM.PATH)) {
+//					score.add(198);
+//				}
+//				
+//				if(trapPowerPill != -1 && move == game.getNextMoveTowardsTarget(current, trapPowerPill, DM.PATH)) {
+////					GameView.addPoints(game, Color.orange, current, trapPowerPill);
+//					score.add(195);
+//				}
 //				if(safeEscapeNode != -1
 //						&& move == game.getNextMoveTowardsTarget(current, safeEscapeNode, DM.PATH)) {
 //					GameView.addPoints(game,Color.orange, safeEscapeNode);
@@ -263,11 +262,10 @@ public class GreedyMsPacManBan extends Controller<MOVE>
 //				if(greedySafePill != -1 && move == game.getNextMoveTowardsTarget(current, greedySafePill, DM.PATH)) {
 //					score.add(192);
 //				}
-				if(farthestJunction != -1 && move == game.getNextMoveTowardsTarget(current, farthestJunction, DM.PATH)) {
-					score.add(191);
-				}
+//				if(farthestJunction != -1 && move == game.getNextMoveTowardsTarget(current, farthestJunction, DM.PATH)) {
+//					score.add(191);
+//				}
 				if(greedySafeIndex != -1 && move == game.getNextMoveTowardsTarget(current, greedySafeIndex, DM.PATH)) {
-					GameView.addPoints(game, Color.YELLOW, greedySafeIndex);
 					score.add(182);
 				}
 			}
