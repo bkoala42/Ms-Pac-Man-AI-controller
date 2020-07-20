@@ -20,7 +20,7 @@ import pacman.game.GameView;
  */
 public class GreedyMsPacManBan extends Controller<MOVE>
 {
-	private static final int MIN_DISTANCE=20;	//if a ghost is this close, run away
+	private static final int MIN_DISTANCE=25;	//if a ghost is this close, run away
 	private static final int LAIR_DISTANCE=10;	//if a ghost is this close, run away
 	private MOVE myMove=MOVE.NEUTRAL;
 	private static final int GUARD_DISTANCE=10; // distance before getting eaten
@@ -189,7 +189,7 @@ public class GreedyMsPacManBan extends Controller<MOVE>
 		// ghost targets to take care of
 		GHOST closestGhost, edibleGhost;
 		closestGhost = strategy.getCloserGhost(game, current);
-		edibleGhost = strategy.isThereEdibleGhost(game, current);
+		edibleGhost = strategy.nearestEdibleGhost(game, current);
 //		if(closestGhost != null)
 //			GameView.addPoints(game, Color.lightGray, game.getShortestPath(current, game.getGhostCurrentNodeIndex(closestGhost)));
 		
@@ -225,11 +225,13 @@ public class GreedyMsPacManBan extends Controller<MOVE>
 //				System.out.println(game.getShortestPathDistance(current, game.getGhostCurrentNodeIndex(closestGhost)));
 			
 			// There is a safely edible ghost, go and catch it
-			if(edibleGhost != null) {
+			int[] activePills = null;
+			if(edibleGhost != null) {			
 				int pillLeft = strategy.cleanCorners(game, current, strategy.getPillTargets(game, true), eatenPowerPill);
+				activePills = strategy.getAllTargets(game, true);
 				if(pillLeft != -1 && move == game.getNextMoveTowardsTarget(current, pillLeft, DM.PATH))
 					score.add(201);
-				else if(move == game.getNextMoveTowardsTarget(current, game.getGhostCurrentNodeIndex(edibleGhost), DM.PATH))
+				else if(activePills.length > 10 && move == game.getNextMoveTowardsTarget(current, game.getGhostCurrentNodeIndex(edibleGhost), DM.PATH))
 					score.add(200);
 //				GameView.addPoints(game, Color.green, game.getShortestPath(current, game.getGhostCurrentNodeIndex(edibleGhost)));
 			}
@@ -246,14 +248,14 @@ public class GreedyMsPacManBan extends Controller<MOVE>
 						score.add(199);
 					}
 				}
-//				if(safePill != -1 && move == game.getNextMoveTowardsTarget(current, safePill, DM.PATH)) {
-//					score.add(198);
-//				}
-//				
-//				if(trapPowerPill != -1 && move == game.getNextMoveTowardsTarget(current, trapPowerPill, DM.PATH)) {
-////					GameView.addPoints(game, Color.orange, current, trapPowerPill);
-//					score.add(195);
-//				}
+				if(safePill != -1 && move == game.getNextMoveTowardsTarget(current, safePill, DM.PATH)) {
+					score.add(198);
+				}
+				
+				if(trapPowerPill != -1 && move == game.getNextMoveTowardsTarget(current, trapPowerPill, DM.PATH)) {
+//					GameView.addPoints(game, Color.orange, current, trapPowerPill);
+					score.add(195);
+				}
 //				if(safeEscapeNode != -1
 //						&& move == game.getNextMoveTowardsTarget(current, safeEscapeNode, DM.PATH)) {
 //					GameView.addPoints(game,Color.orange, safeEscapeNode);
@@ -262,9 +264,9 @@ public class GreedyMsPacManBan extends Controller<MOVE>
 //				if(greedySafePill != -1 && move == game.getNextMoveTowardsTarget(current, greedySafePill, DM.PATH)) {
 //					score.add(192);
 //				}
-//				if(farthestJunction != -1 && move == game.getNextMoveTowardsTarget(current, farthestJunction, DM.PATH)) {
-//					score.add(191);
-//				}
+				if(farthestJunction != -1 && move == game.getNextMoveTowardsTarget(current, farthestJunction, DM.PATH)) {
+					score.add(191);
+				}
 				if(greedySafeIndex != -1 && move == game.getNextMoveTowardsTarget(current, greedySafeIndex, DM.PATH)) {
 					score.add(182);
 				}
