@@ -21,6 +21,7 @@ public class GreedyMsPacManStrategyBan {
 	private static final int FLASH_TIME_HIGH = 30;
 	private static final int FLASH_TIME_MEDIUM = 15;
 	private static final int FLASH_TIME_LOW = 10;
+	private static boolean GHOST_IN_THE_LAIR = false;
 	
 	/**
 	 * Get the indices of pills in the map
@@ -844,7 +845,23 @@ public class GreedyMsPacManStrategyBan {
 			{
 				if(distance<minDistance && checkSafeChase(game.getGhostCurrentNodeIndex(ghost), pos, game, false)) {
 					// sometimes mspacman chases an edible ghost and a non edible ghost appears from the lair and she dies
-					if(isThereGhostInLair(game)) {
+//					if(isThereGhostInLair(game)) {
+//						int[] pathToMinGhost = game.getShortestPath(pos, game.getGhostCurrentNodeIndex(ghost));
+//						GameView.addPoints(game, Color.blue, pathToMinGhost);
+//						boolean safe = true;
+//						for(int node: pathToMinGhost) {
+//							if(node == game.getGhostInitialNodeIndex() && game.getShortestPathDistance(pos, game.getGhostInitialNodeIndex()) < GUARD_DISTANCE) {
+//								safe = false;
+//								break;
+//							}
+//						}
+//						if(safe) {
+//							minDistance=distance;
+//							minGhost=ghost;
+//						}
+//					}
+					// PRIOR ACTION WRT isThereGhostInLair
+					if(GHOST_IN_THE_LAIR) {
 						int[] pathToMinGhost = game.getShortestPath(pos, game.getGhostCurrentNodeIndex(ghost));
 						GameView.addPoints(game, Color.blue, pathToMinGhost);
 						boolean safe = true;
@@ -866,6 +883,14 @@ public class GreedyMsPacManStrategyBan {
 				}
 			}
 		}
+		// code to update GHOST_IN_THE_LAIR
+		// consider it in the lair already if distance is < GUARD_DISTANCE
+		// NB This method is and must be called at each iteration in heuristic1
+		if(!isThereGhostInLair(game))
+			GHOST_IN_THE_LAIR = false;
+		if(minGhost != null && minDistance < GUARD_DISTANCE)
+			GHOST_IN_THE_LAIR = true;
+		
 		return minGhost;
 	}
 	
