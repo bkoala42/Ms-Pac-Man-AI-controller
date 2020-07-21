@@ -38,8 +38,8 @@ public class GreedyMsPacManBan extends Controller<MOVE>
 		
 		
 //		GameView.addPoints(game, Color.gray, banned);
-		if(game.wasPacManEaten()) 
-			System.out.println("++++++++++++++++ SONO CREPATO ++++++++++++++++");
+//		if(game.wasPacManEaten()) 
+//			System.out.println("++++++++++++++++ SONO CREPATO ++++++++++++++++");
 		int posMsPacman=game.getPacmanCurrentNodeIndex();
 		
 		// UPDATE GLOBAL VARIABLES
@@ -75,7 +75,7 @@ public class GreedyMsPacManBan extends Controller<MOVE>
 			myMove = moves[utility1[1]];
 		}
 
-		System.out.println("Time: " + (java.lang.System.currentTimeMillis() - startTime));
+//		System.out.println("Time: " + (java.lang.System.currentTimeMillis() - startTime));
 		return myMove;
 	}
 		
@@ -248,13 +248,15 @@ public class GreedyMsPacManBan extends Controller<MOVE>
 						score.add(199);
 					}
 				}
+				
 				if(safePill != -1 && move == game.getNextMoveTowardsTarget(current, safePill, DM.PATH)) {
 					score.add(198);
 				}
-				
+
 				if(trapPowerPill != -1 && move == game.getNextMoveTowardsTarget(current, trapPowerPill, DM.PATH)) {
-//					GameView.addPoints(game, Color.orange, current, trapPowerPill);
+					//	GameView.addPoints(game, Color.orange, current, trapPowerPill);
 					score.add(195);
+				
 				}
 //				if(safeEscapeNode != -1
 //						&& move == game.getNextMoveTowardsTarget(current, safeEscapeNode, DM.PATH)) {
