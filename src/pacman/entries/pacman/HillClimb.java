@@ -7,6 +7,7 @@ import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Random;
 
 import pacman.Executor;
 import pacman.controllers.Controller;
@@ -15,29 +16,50 @@ import pacman.game.Constants.MOVE;
 
 import com.google.common.collect.Lists;
 
-public class HillClimb {
-	private static final int MIN_VALUE = 0;
-	private static final int MAX_VALUE = 50;
+/**
+ * Abstract implementation of the hill climbing algorithm
+ * Subclasses specialize the process of selection of the best node in the main loop of the algorithm
+ */
+public abstract class HillClimb {
 	
-	private Executor exec;
-	private Controller<MOVE> msPacManController;
-	private Controller<EnumMap<GHOST, MOVE>> ghostController;
-	private Integer[] distParams;
-	private int delta;
-	private int trials;
-	private boolean logEnabled;
+	protected Executor exec;
+	protected Controller<MOVE> msPacManController;
+	protected Controller<EnumMap<GHOST, MOVE>> ghostController;
+	
+	private List<ControllerParameter> parameters;
+	private List<Integer> initialParams;
+	private List<List<Integer>> parametersSpace;
+	
+	protected int trials;
+	
+	private double bestValue;
+	
+	protected boolean logEnabled;
+	private boolean randomStart;
+	
+	protected StringBuffer log;
 	
 	public HillClimb(Executor exec, Controller<MOVE> msPacManController, Controller<EnumMap<GHOST, MOVE>> ghostController, 
-			Integer[] distParams) {
+			List<ControllerParameter> parameters, List<Integer> initialParams) {
 		this.exec = exec;
 		this.msPacManController = msPacManController;
 		this.ghostController = ghostController;
-		this.distParams = distParams;
+		this.parameters = parameters;
+		this.initialParams = initialParams;
 		this.logEnabled = false;
+		this.randomStart = false;
+		
+		List<List<Integer>> parametersValues = new ArrayList<List<Integer>>();
+		
+		for(ControllerParameter par: this.parameters) {
+			parametersValues.add(par.getValues());
+		}
+		
+		this.parametersSpace = Lists.cartesianProduct(parametersValues);
 	}
 	
-	public void setDelta(int delta) {
-		this.delta = delta;
+	public void setRandomStart(boolean random) {
+		this.randomStart = random;
 	}
 	
 	public void setTrials(int trials) {
@@ -48,40 +70,88 @@ public class HillClimb {
 		this.logEnabled = enabled;
 	}
 	
+	public double getBestValue() {
+		return this.bestValue;
+	}
+	
 	/**
-	 * Hill climb algorithm to optimize the distance measures used by MsPacMan controller
-	 * @return array of best parameters
+	 * Finds the neighborhood of a state by considering all the possibe variations of the parameters
+	 * @param state current hill climbing algorithm state
+	 * @return all possible new states
 	 */
-	public Integer[] tuneDistParams() {
-		double nextScore = 0, currScore = 0, tmpScore = 0;
+	private List<List<Integer>> getNeighborhood(List<Integer> state) {
+		int negVariation, posVariation;
+		List<List<Integer>> lists = new ArrayList<List<Integer>>();
+		
+		for(int i = 0; i < state.size(); i++) {
+			negVariation = parameters.get(i).getPreviousValue(state.get(i));
+			posVariation = parameters.get(i).getNextValue(state.get(i));
+			lists.add(Arrays.asList(new Integer[] {negVariation, posVariation}));
+		}
+		
+		return Lists.cartesianProduct(lists);
+	}
+	
+	/**
+	 * Get the initial state for the hill climbing loop
+	 * @param randomized true if a random selection of the initial node has to be performed
+	 * @return initial state 
+	 */
+	protected List<Integer> getInitialNode() {
+		List<Integer> initialNode = null;
+		Random rand = new Random();
+		if(randomStart) {
+			initialNode = parametersSpace.get(rand.nextInt(parametersSpace.size()));
+		}	
+		else {
+			initialNode = initialParams;
+		}
+		return initialNode;
+	}
+	
+	/**
+	 * Get the new state from the neighborhood in the hill climbing loop
+	 * @param neighborhood neighborhood of the current state
+	 * @param currScore value of the current state
+	 * @return new node for the hill climbing loop
+	 */
+	protected abstract List<Object> getNextClimbingNode(List<List<Integer>> neighborhood, double currScore);
+	
+	/**
+	 * Main loop of the hill climbing loop
+	 * @param initialNode starting node of the local search
+	 * @return node corresponding to maximum value found by local search
+	 */
+	public List<Integer> climbingLoop(List<Integer> initialNode) {
+		double nextScore = 0, currScore = 0;
 		boolean isImproving = true;
 		List<List<Integer>> neighborhood = new LinkedList<List<Integer>>();
+		List<Object> nodeSelectionResult;
 		
-		StringBuffer log = null;
+		// check the time of computation of the hill climb
+		long startTime = System.currentTimeMillis();
+		
 		if(logEnabled) {
 			log = new StringBuffer("Hill climbing tuning: \r\n");
 		}
-		
-		Integer[] currNode = distParams, nextNode = null;
+		// initialize climbing loop taking the first node, set the node parameters for the controller
+		List<Integer> currNode = getInitialNode();
+		List<Integer> nextNode = null;
+		// QUA VA CHIAMATO UN SETTER PER IL CONTROLLER CHE METTE I PARAMETRI
 		currScore = exec.runExperiment(msPacManController, ghostController, trials);
 		if(logEnabled)
-			log.append("Node: "+currNode.toString()+" Value: "+currScore);
+			log.append("Starting Node: "+currNode.toString()+" Value: "+currScore);
 		
 		while(isImproving) {
 			neighborhood = getNeighborhood(currNode);
 			nextScore = Double.NEGATIVE_INFINITY;
-			nextNode = null;
 			// check the score using the distance parameters of the neighborhood
-			for(List<Integer> node: neighborhood) {
-				tmpScore = exec.runExperiment(msPacManController, ghostController, trials);
-				if(logEnabled)
-					log.append("Node: "+node.toString()+" Value: "+tmpScore+"\r\n");
-				
-				if(tmpScore > currScore) {
-					nextNode = node.toArray(new Integer[0]);
-					nextScore = tmpScore;
-				}
-			}
+			
+			nodeSelectionResult = getNextClimbingNode(neighborhood, currScore);
+			nextNode = (List<Integer>) nodeSelectionResult.get(0);
+			nextScore = (double)nodeSelectionResult.get(1);
+//			nextScore = exec.runExperiment(msPacManController, ghostController, trials);
+			
 			// update current best result
 			if(nextScore <= currScore)
 				isImproving = false;
@@ -94,6 +164,9 @@ public class HillClimb {
 					log.append("NEW BEST NODE: "+currNode.toString()+" Value: "+currScore+"\r\n");
 			}
 		}
+		bestValue = currScore;
+		if(logEnabled)
+			log.append("Time: " + (System.currentTimeMillis() - startTime));
 		
 		if(logEnabled) {
 			try {
@@ -107,34 +180,7 @@ public class HillClimb {
 		return currNode;
 	}
 	
-	/**
-	 * Finds the neighborhood of a state by considering all the possibe variations of the parameters
-	 * @param state current hill climbing algorithm state
-	 * @param delta	step ov variation of the distance
-	 * @return all possible new states
-	 */
-	private List<List<Integer>> getNeighborhood(Integer[] state) {
-		int negVariation, posVariation;
-		List<List<Integer>> lists = new ArrayList<List<Integer>>();
-		for(Integer i: state) {
-			if(i - delta <= MIN_VALUE) {
-				negVariation = MIN_VALUE;
-			}
-			else {
-				negVariation = i - delta;
-			}
-			
-			if(i + delta >= MAX_VALUE) {
-				posVariation = MAX_VALUE;
-			}
-			else {
-				posVariation = i + delta;
-			}
-			lists.add(Arrays.asList(new Integer[] {negVariation, posVariation}));
-		}
-		
-		return Lists.cartesianProduct(lists);
-	}
+	
 	
 //	public static void main(String [] args) {
 //		Integer[] state = {3, 4, 5, 6};
