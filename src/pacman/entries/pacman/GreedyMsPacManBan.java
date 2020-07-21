@@ -20,10 +20,10 @@ import pacman.game.GameView;
  */
 public class GreedyMsPacManBan extends Controller<MOVE>
 {
-	private static final int MIN_DISTANCE=25;	//if a ghost is this close, run away
-	private static final int LAIR_DISTANCE=10;	//if a ghost is this close, run away
+	private static final int MIN_DISTANCE=25;	
+	private static final int LAIR_DISTANCE=5;	
+	private static final int FINISHLEVEL_COUNTER=5;	
 	private MOVE myMove=MOVE.NEUTRAL;
-	private static final int GUARD_DISTANCE=10; // distance before getting eaten
 	
 	private GreedyMsPacManStrategyBan strategy;
 	private int greedySafePill, greedyPill, greedyIndex, safeEscapeNode;
@@ -75,7 +75,7 @@ public class GreedyMsPacManBan extends Controller<MOVE>
 			myMove = moves[utility1[1]];
 		}
 
-//		System.out.println("Time: " + (java.lang.System.currentTimeMillis() - startTime));
+		System.out.println("Time: " + (java.lang.System.currentTimeMillis() - startTime));
 		return myMove;
 	}
 		
@@ -230,8 +230,8 @@ public class GreedyMsPacManBan extends Controller<MOVE>
 				int pillLeft = strategy.cleanCorners(game, current, strategy.getPillTargets(game, true), eatenPowerPill);
 				activePills = strategy.getAllTargets(game, true);
 				if(pillLeft != -1 && move == game.getNextMoveTowardsTarget(current, pillLeft, DM.PATH))
-					score.add(201);
-				else if(activePills.length > 10 && move == game.getNextMoveTowardsTarget(current, game.getGhostCurrentNodeIndex(edibleGhost), DM.PATH))
+					score.add(202);
+				else if(activePills.length > FINISHLEVEL_COUNTER && move == game.getNextMoveTowardsTarget(current, game.getGhostCurrentNodeIndex(edibleGhost), DM.PATH))
 					score.add(200);
 //				GameView.addPoints(game, Color.green, game.getShortestPath(current, game.getGhostCurrentNodeIndex(edibleGhost)));
 			}

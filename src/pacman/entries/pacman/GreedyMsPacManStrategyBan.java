@@ -14,8 +14,13 @@ public class GreedyMsPacManStrategyBan {
 	private static final int CHASE_DISTANCE = 50;
 	private static final int GUARD_DISTANCE = 5;
 	private static final int MIN_DISTANCE = 25;
-	private static final int EAT_DISTANCE = 30;
-	private static final int CLEAN_DISTANCE = 12;
+	private static final int CLEAN_DISTANCE = 11;
+	private static final int EAT_DISTANCE_HIGH = 30;
+	private static final int EAT_DISTANCE_MEDIUM = 15;
+	private static final int EAT_DISTANCE_LOW = 10;
+	private static final int FLASH_TIME_HIGH = 30;
+	private static final int FLASH_TIME_MEDIUM = 15;
+	private static final int FLASH_TIME_LOW = 10;
 	
 	/**
 	 * Get the indices of pills in the map
@@ -172,7 +177,7 @@ public class GreedyMsPacManStrategyBan {
 			}
 		}
 		if(!enterCorner) {
-			System.out.println("caso ghost lontani");
+//			System.out.println("caso ghost lontani");
 			
 		
 			// Get the closest junction which can be safely reached
@@ -241,7 +246,7 @@ public class GreedyMsPacManStrategyBan {
 		}
 		}
 		else {
-			System.out.println("caso ghost vicini");
+//			System.out.println("caso ghost vicini");
 			boolean flag = true;
 			if(targets.length != 0) {
 				// for all the available targets pick the closest one which can be reached by MsPacman before than the ghosts
@@ -831,13 +836,33 @@ public class GreedyMsPacManStrategyBan {
 		
 		for(GHOST ghost : GHOST.values()) {
 			int distance=game.getShortestPathDistance(pos, game.getGhostCurrentNodeIndex(ghost));
-			if(game.getGhostEdibleTime(ghost) > 30 && distance <= EAT_DISTANCE
-					|| (game.getGhostEdibleTime(ghost) > 15 && game.getGhostEdibleTime(ghost) <= 30 && distance <= EAT_DISTANCE/2)
-					|| (game.getGhostEdibleTime(ghost) >= 10 && game.getGhostEdibleTime(ghost) <= 15 && distance < EAT_DISTANCE/3)
-					) {
+			int time=game.getGhostEdibleTime(ghost);
+			if(time > FLASH_TIME_HIGH && distance <= EAT_DISTANCE_HIGH
+					|| (time > FLASH_TIME_MEDIUM && time <= FLASH_TIME_HIGH && distance <= EAT_DISTANCE_MEDIUM)
+					|| (time >= FLASH_TIME_LOW && time <= FLASH_TIME_MEDIUM && distance <= EAT_DISTANCE_LOW)
+					) 
+			{
 				if(distance<minDistance && checkSafeChase(game.getGhostCurrentNodeIndex(ghost), pos, game, false)) {
-					minDistance=distance;
-					minGhost=ghost;
+					// sometimes mspacman chases an edible ghost and a non edible ghost appears from the lair and she dies
+					if(isThereGhostInLair(game)) {
+						int[] pathToMinGhost = game.getShortestPath(pos, game.getGhostCurrentNodeIndex(ghost));
+						GameView.addPoints(game, Color.blue, pathToMinGhost);
+						boolean safe = true;
+						for(int node: pathToMinGhost) {
+							if(node == game.getGhostInitialNodeIndex() && game.getShortestPathDistance(pos, game.getGhostInitialNodeIndex()) < GUARD_DISTANCE) {
+								safe = false;
+								break;
+							}
+						}
+						if(safe) {
+							minDistance=distance;
+							minGhost=ghost;
+						}
+					}
+					else {
+						minDistance=distance;
+						minGhost=ghost;
+					}
 				}
 			}
 		}
