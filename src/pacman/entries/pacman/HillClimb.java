@@ -7,6 +7,7 @@ import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 import pacman.Executor;
@@ -23,11 +24,10 @@ import com.google.common.collect.Lists;
 public abstract class HillClimb {
 	
 	protected Executor exec;
-	protected Controller<MOVE> msPacManController;
+	protected MyMsPacMan msPacManController;
 	protected Controller<EnumMap<GHOST, MOVE>> ghostController;
 	
-	private List<ControllerParameter> parameters;
-	private List<Integer> initialParams;
+	private Map<String, ControllerParameter> parameters;
 	private List<List<Integer>> parametersSpace;
 	
 	protected int trials;
@@ -39,20 +39,19 @@ public abstract class HillClimb {
 	
 	protected StringBuffer log;
 	
-	public HillClimb(Executor exec, Controller<MOVE> msPacManController, Controller<EnumMap<GHOST, MOVE>> ghostController, 
-			List<ControllerParameter> parameters, List<Integer> initialParams) {
+	public HillClimb(Executor exec, MyMsPacMan msPacManController, Controller<EnumMap<GHOST, MOVE>> ghostController, 
+			Map<String, ControllerParameter> parameters) {
 		this.exec = exec;
 		this.msPacManController = msPacManController;
 		this.ghostController = ghostController;
 		this.parameters = parameters;
-		this.initialParams = initialParams;
 		this.logEnabled = false;
 		this.randomStart = false;
 		
 		List<List<Integer>> parametersValues = new ArrayList<List<Integer>>();
 		
-		for(ControllerParameter par: this.parameters) {
-			parametersValues.add(par.getValues());
+		for(String par: this.parameters.keySet()) {
+			parametersValues.add(this.parameters.get(par).getValues());
 		}
 		
 		this.parametersSpace = Lists.cartesianProduct(parametersValues);
@@ -74,20 +73,32 @@ public abstract class HillClimb {
 		return this.bestValue;
 	}
 	
+	public List<List<Integer>> getParametersSpace() {
+		return this.parametersSpace; 
+	}
+	
 	/**
 	 * Finds the neighborhood of a state by considering all the possibe variations of the parameters
 	 * @param state current hill climbing algorithm state
 	 * @return all possible new states
 	 */
-	private List<List<Integer>> getNeighborhood(List<Integer> state) {
+	protected List<List<Integer>> getNeighborhood(List<Integer> state) {
 		int negVariation, posVariation;
 		List<List<Integer>> lists = new ArrayList<List<Integer>>();
+		int i = 0;
 		
-		for(int i = 0; i < state.size(); i++) {
-			negVariation = parameters.get(i).getPreviousValue(state.get(i));
-			posVariation = parameters.get(i).getNextValue(state.get(i));
+		for(String par: parameters.keySet()) {
+			negVariation = parameters.get(par).getPreviousValue(state.get(i));
+			posVariation = parameters.get(par).getNextValue(state.get(i));
 			lists.add(Arrays.asList(new Integer[] {negVariation, posVariation}));
+			i++;
 		}
+		
+//		for(int i = 0; i < state.size(); i++) {
+//			negVariation = parameters.get(i).getPreviousValue(state.get(i));
+//			posVariation = parameters.get(i).getNextValue(state.get(i));
+//			lists.add(Arrays.asList(new Integer[] {negVariation, posVariation}));
+//		}
 		
 		return Lists.cartesianProduct(lists);
 	}
@@ -104,7 +115,7 @@ public abstract class HillClimb {
 			initialNode = parametersSpace.get(rand.nextInt(parametersSpace.size()));
 		}	
 		else {
-			initialNode = initialParams;
+			initialNode = parametersSpace.get(0);
 		}
 		return initialNode;
 	}
@@ -113,9 +124,9 @@ public abstract class HillClimb {
 	 * Get the new state from the neighborhood in the hill climbing loop
 	 * @param neighborhood neighborhood of the current state
 	 * @param currScore value of the current state
-	 * @return new node for the hill climbing loop
+	 * @return new node for the hill climbing loop and the corresponding value
 	 */
-	protected abstract List<Object> getNextClimbingNode(List<List<Integer>> neighborhood, double currScore);
+	protected abstract Map<Double, List<Integer>> getNextClimbingNode(List<List<Integer>> neighborhood, double currScore, List<List<Integer>> alreadyVisitedNodes);
 	
 	/**
 	 * Main loop of the hill climbing loop
@@ -124,9 +135,12 @@ public abstract class HillClimb {
 	 */
 	public List<Integer> climbingLoop(List<Integer> initialNode) {
 		double nextScore = 0, currScore = 0;
-		boolean isImproving = true;
+		boolean isImproving = true, endOfRun = false;
 		List<List<Integer>> neighborhood = new LinkedList<List<Integer>>();
-		List<Object> nodeSelectionResult;
+		Map<Double, List<Integer>> nodeSelectionResult;
+		
+		// always consider the already visited nodes to avoid computing on them again
+		List<List<Integer>> alreadyVisitedNodes = new ArrayList<List<Integer>>();
 		
 		// check the time of computation of the hill climb
 		long startTime = System.currentTimeMillis();
@@ -137,29 +151,39 @@ public abstract class HillClimb {
 		// initialize climbing loop taking the first node, set the node parameters for the controller
 		List<Integer> currNode = getInitialNode();
 		List<Integer> nextNode = null;
-		// QUA VA CHIAMATO UN SETTER PER IL CONTROLLER CHE METTE I PARAMETRI
+//		System.out.println("Iterating...");
+		setControllerNewParameters(currNode);
 		currScore = exec.runExperiment(msPacManController, ghostController, trials);
+		msPacManController.printParameters();
+		alreadyVisitedNodes.add(currNode);
+//		System.out.println("Starting Node: "+currNode.toString()+" Value: "+currScore+"\r\n");
 		if(logEnabled)
-			log.append("Starting Node: "+currNode.toString()+" Value: "+currScore);
+			log.append("Starting Node: "+currNode.toString()+" Value: "+currScore+"\r\n");
 		
 		while(isImproving) {
+			System.out.println("Iterating...");
 			neighborhood = getNeighborhood(currNode);
 			nextScore = Double.NEGATIVE_INFINITY;
-			// check the score using the distance parameters of the neighborhood
 			
-			nodeSelectionResult = getNextClimbingNode(neighborhood, currScore);
-			nextNode = (List<Integer>) nodeSelectionResult.get(0);
-			nextScore = (double)nodeSelectionResult.get(1);
-//			nextScore = exec.runExperiment(msPacManController, ghostController, trials);
+			// new node found by hill climbing
+			nodeSelectionResult = getNextClimbingNode(neighborhood, currScore, alreadyVisitedNodes);
+			// there is only one entry in the map
+			for(Double score: nodeSelectionResult.keySet()) {
+				nextScore = score;
+				nextNode = nodeSelectionResult.get(score);
+			}
+//			System.out.println("Valori trovati "+nextNode+" "+nextScore);
 			
 			// update current best result
-			if(nextScore <= currScore)
+			if(nextNode == null) {
 				isImproving = false;
+//				System.out.println("Chiudo il loop "+isImproving);
+			}
 			else {
 				currNode = nextNode;
 				currScore = nextScore;
-				neighborhood.clear();
 				
+//				System.out.println("NEW BEST NODE: "+currNode.toString()+" Value: "+currScore);
 				if(logEnabled)
 					log.append("NEW BEST NODE: "+currNode.toString()+" Value: "+currScore+"\r\n");
 			}
@@ -178,6 +202,30 @@ public abstract class HillClimb {
 			}
 		}
 		return currNode;
+	}
+	
+	protected void setControllerNewParameters(List<Integer> currentParameters) {
+		int i = 0;
+		for(String key: parameters.keySet()) {
+			switch(key) {
+				case "minGhostDistance":
+					msPacManController.setMinGhostDistance(currentParameters.get(i));
+					break;
+				case "guardDistance":
+					msPacManController.setGuardDistance(currentParameters.get(i));
+					break;
+				case "chaseDistance":
+					msPacManController.setChaseDistance(currentParameters.get(i));
+					break;
+				case "eatDistance":
+					msPacManController.seteatDistanceHigh(currentParameters.get(i));
+					break;
+				case "cleanDistance":
+					msPacManController.setCleanDistance(currentParameters.get(i));
+					break;
+			}
+			i++;
+		}	
 	}
 	
 	

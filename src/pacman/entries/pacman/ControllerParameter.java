@@ -1,5 +1,6 @@
 package pacman.entries.pacman;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -55,4 +56,27 @@ public class ControllerParameter {
 		}
 		return previousState;
 	}	
+	
+	public String toString() {
+		return name+" values: "+values.toString();
+	}
+	
+//	public static void main(String [] args) {
+//		Integer[] par = new Integer[4];
+//		par[0] = 1;
+//		par[1] = 2;
+//		par[2] = 3;
+//		par[3] = 4;
+//		ControllerParameter cPar = new ControllerParameter("Prova", Arrays.asList(par));
+//		
+//		System.out.println(cPar.getMaxValue());
+//		System.out.println(cPar.getMinValue());
+//		System.out.println(cPar.getName());
+//		System.out.println(cPar.getValues());
+//		System.out.println(cPar);
+//		System.out.println(cPar.getNextValue(2));
+//		System.out.println(cPar.getPreviousValue(2));
+//		System.out.println(cPar.getNextValue(4));
+//		System.out.println(cPar.getPreviousValue(1));
+//	}
 }

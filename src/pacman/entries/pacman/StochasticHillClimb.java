@@ -2,7 +2,9 @@ package pacman.entries.pacman;
 
 import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 import pacman.Executor;
@@ -16,35 +18,38 @@ import pacman.game.Constants.MOVE;
  */
 public class StochasticHillClimb extends HillClimb {
 
-	public StochasticHillClimb(Executor exec, Controller<MOVE> msPacManController,
-			Controller<EnumMap<GHOST, MOVE>> ghostController, List<ControllerParameter> parameters,
-			List<Integer> initialParams) {
-		super(exec, msPacManController, ghostController, parameters, initialParams);
+	public StochasticHillClimb(Executor exec, MyMsPacMan msPacManController,
+			Controller<EnumMap<GHOST, MOVE>> ghostController, Map<String, ControllerParameter> parameters) {
+		super(exec, msPacManController, ghostController, parameters);
 	}
 
 	@Override
-	protected List<Object> getNextClimbingNode(List<List<Integer>> neighborhood, double currScore) {
+	protected Map<Double, List<Integer>> getNextClimbingNode(List<List<Integer>> neighborhood, double currScore, List<List<Integer>> alreadyVisitedNodes) {
 		List<List<Integer>> uphillNodes = new ArrayList<List<Integer>>();
 		List<Double> uphillScores = new ArrayList<Double>();
-		List<Object> returnValue = null;
+		Map<Double, List<Integer>> returnValue = new HashMap<Double, List<Integer>>();
 		
 		double tmpScore = 0;
 		Random rand = new Random();
+		// loop over all the nodes of the neighborhood and store all those having an improvement with respect to the current 
+		// result. Then pick randomly one of them as new node
 		for(List<Integer> node: neighborhood) {
-			// QUA VANNO NUOVAMENTE MESSI I PARAMETRI DEL NODO
-			tmpScore = exec.runExperiment(msPacManController, ghostController, trials);
-			if(logEnabled)
-				log.append("Node: "+node.toString()+" Value: "+tmpScore+"\r\n");
-			
-			if(tmpScore > currScore) {
-				uphillNodes.add(node);
-				uphillScores.add(tmpScore);
+			if(!alreadyVisitedNodes.contains(node)) {
+				alreadyVisitedNodes.add(node);
+				setControllerNewParameters(node);
+				tmpScore = exec.runExperiment(msPacManController, ghostController, trials);
+				if(logEnabled)
+					log.append("Inside new node selection loop, node: "+node.toString()+" Value: "+tmpScore+"\r\n");
+				
+				if(tmpScore > currScore) {
+					uphillNodes.add(node);
+					uphillScores.add(tmpScore);
+				}
 			}
 		}
 		
 		int stochasticSelection = rand.nextInt(uphillNodes.size());
-		returnValue.add(uphillNodes.get(stochasticSelection));
-		returnValue.add(uphillScores.get(stochasticSelection));
+		returnValue.put(uphillScores.get(stochasticSelection), uphillNodes.get(stochasticSelection));
 		return returnValue;
 	}
 
