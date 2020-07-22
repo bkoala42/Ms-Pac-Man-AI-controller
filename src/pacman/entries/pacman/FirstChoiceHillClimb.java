@@ -1,5 +1,6 @@
 package pacman.entries.pacman;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -29,14 +30,16 @@ public class FirstChoiceHillClimb extends HillClimb {
 		List<Integer> nextNode = null;
 		
 		// Shuffle the neighborhood and pick the first node that improves the current node value	
-		Collections.shuffle(neighborhood);
-		for(List<Integer> node: neighborhood) {
+		ArrayList<List<Integer>> tmpNeighborhood = new ArrayList<List<Integer>>(neighborhood);
+		Collections.shuffle(tmpNeighborhood);
+		for(List<Integer> node: tmpNeighborhood) {
 			if(!alreadyVisitedNodes.contains(node)) {
 				alreadyVisitedNodes.add(node);
 				setControllerNewParameters(node);
 				tmpScore = exec.runExperiment(msPacManController, ghostController, trials);
 				if(logEnabled)
 					log.append("Inside new node selection loop, node: "+node.toString()+" Value: "+tmpScore+"\r\n");
+				System.out.println("Inside new node selection loop, node: "+node.toString()+" Value: "+tmpScore+"\r\n");
 
 				if(tmpScore > currScore) {
 					nextNode = node;

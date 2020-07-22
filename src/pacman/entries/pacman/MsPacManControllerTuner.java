@@ -1,5 +1,7 @@
 package pacman.entries.pacman;
 
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumMap;
@@ -24,16 +26,16 @@ public class MsPacManControllerTuner {
 		Executor exec = new Executor();
 		MyMsPacMan msPacManController = new MyMsPacMan();
 		// set all parameters to default value
-		msPacManController.setMinGhostDistance(-1);
-		msPacManController.setChaseDistance(-1);
-		msPacManController.setCleanDistance(-1);
-		msPacManController.seteatDistanceHigh(-1);
-		msPacManController.setGuardDistance(-1);
+//		msPacManController.setMinGhostDistance(-1);
+//		msPacManController.setChaseDistance(-1);
+//		msPacManController.setCleanDistance(-1);
+//		msPacManController.seteatDistanceHigh(-1);
+//		msPacManController.setGuardDistance(-1);
 		
 		// select the ghost team against which tune the controller
-		Controller<EnumMap<GHOST, MOVE>> ghostController = new RandomGhosts();
+//		Controller<EnumMap<GHOST, MOVE>> ghostController = new RandomGhosts();
 //		Controller<EnumMap<GHOST, MOVE>> ghostController = new AggressiveGhosts();
-//		Controller<EnumMap<GHOST, MOVE>> ghostController = new Legacy();
+		Controller<EnumMap<GHOST, MOVE>> ghostController = new Legacy();
 //		Controller<EnumMap<GHOST, MOVE>> ghostController = new Legacy2TheReckoning();
 		
 		// define the set of parameters used by the controller. Their range is defined as equivalence classes
@@ -78,7 +80,7 @@ public class MsPacManControllerTuner {
 		// ATTENZIONE AL TIPO DI MAP O SI SPUTTANA TUTTO
 		Map<String, ControllerParameter> controllerParameters = new LinkedHashMap<String, ControllerParameter>();
 		controllerParameters.put(minGhostDistance.getName(), minGhostDistance);
-//		controllerParameters.put(guardDistance.getName(), guardDistance);
+		controllerParameters.put(guardDistance.getName(), guardDistance);
 //		controllerParameters.put(chaseDistance.getName(), chaseDistance);
 //		controllerParameters.put(eatDistance.getName(), eatDistance);
 //		controllerParameters.put(cleanDistance.getName(), cleanDistance);
@@ -94,8 +96,14 @@ public class MsPacManControllerTuner {
 		HillClimb hillClimb;
 		
 		// tune using basic hill climbing
-		hillClimb = new BasicHillClimb(exec, msPacManController, ghostController, controllerParameters);
+//		hillClimb = new BasicHillClimb(exec, msPacManController, ghostController, controllerParameters);
 		
+		// tune using stochastic hill climbing
+//		hillClimb = new StochasticHillClimb(exec, msPacManController, ghostController, controllerParameters);
+//	
+		// tune using first choice hill climbing
+		hillClimb = new FirstChoiceHillClimb(exec, msPacManController, ghostController, controllerParameters);
+
 		List<List<Integer>> paramtersSpace = hillClimb.getParametersSpace();
 		System.out.println("Checking parameters space correctness, number of combinations "+paramtersSpace.size());
 		for(List<Integer> l: paramtersSpace) {
@@ -114,29 +122,38 @@ public class MsPacManControllerTuner {
 //		System.out.println(hillClimb.getInitialNode());
 //		System.out.println(hillClimb.getInitialNode());
 		
-		// tune using stochastic hill climbing
-//		hillClimb = new StochasticHillClimb(exec, msPacManController, ghostController, controllerParameters);
-//	
-//		// tune using first choice hill climbing
-//		hillClimb = new FirstChoiceHillClimb(exec, msPacManController, ghostController, controllerParameters);
-//		
+		
 		// enable/disable the log file to check the training procedure
 		hillClimb.setLogEnabled(true);
 		// set randomized start of the process
 		hillClimb.setRandomStart(true);
 		// set number of trials to assess the score
 		hillClimb.setTrials(1);
-//		
+
+		StringBuffer log = new StringBuffer("Hill climbing tuning with epochs: \r\n");
+		
 		double maxScore = 0, tmpScore = 0;
-		int epochs = 1;
+		int epochs = 3;
 		List<Integer> optParametersValues = null; 
 		while(epochs > 0) {
 			optParametersValues = hillClimb.climbingLoop(hillClimb.getInitialNode());
 			tmpScore = hillClimb.getBestValue();
+			System.out.println("Hill climb loop result "+tmpScore);
+			log.append(hillClimb.getLog().toString()+"\r\n");
 			if(tmpScore > maxScore) {
 				maxScore = tmpScore;
 			}
+			log.append("End of epoch "+epochs+"\r\n\r\n");
+			System.out.println("End of epoch "+epochs);
 			epochs--;
+		}
+		
+		try {
+			FileWriter logFile = new FileWriter("hill_climb_epochs.txt");
+			logFile.write(log.toString());
+			logFile.close();
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
 		
 		System.out.println("The best parameters combination is "+optParametersValues+" leading to a score of "+maxScore);

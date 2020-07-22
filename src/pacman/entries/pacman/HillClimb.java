@@ -1,5 +1,6 @@
 package pacman.entries.pacman;
 
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -77,6 +78,10 @@ public abstract class HillClimb {
 		return this.parametersSpace; 
 	}
 	
+	public StringBuffer getLog() {
+		return this.log;
+	}
+	
 	/**
 	 * Finds the neighborhood of a state by considering all the possibe variations of the parameters
 	 * @param state current hill climbing algorithm state
@@ -135,7 +140,7 @@ public abstract class HillClimb {
 	 */
 	public List<Integer> climbingLoop(List<Integer> initialNode) {
 		double nextScore = 0, currScore = 0;
-		boolean isImproving = true, endOfRun = false;
+		boolean isImproving = true;
 		List<List<Integer>> neighborhood = new LinkedList<List<Integer>>();
 		Map<Double, List<Integer>> nodeSelectionResult;
 		
@@ -151,12 +156,12 @@ public abstract class HillClimb {
 		// initialize climbing loop taking the first node, set the node parameters for the controller
 		List<Integer> currNode = getInitialNode();
 		List<Integer> nextNode = null;
-//		System.out.println("Iterating...");
+		System.out.println("Iterating...");
 		setControllerNewParameters(currNode);
-		currScore = exec.runExperiment(msPacManController, ghostController, trials);
 		msPacManController.printParameters();
+		currScore = exec.runExperiment(msPacManController, ghostController, trials);
 		alreadyVisitedNodes.add(currNode);
-//		System.out.println("Starting Node: "+currNode.toString()+" Value: "+currScore+"\r\n");
+		System.out.println("Starting Node: "+currNode.toString()+" Value: "+currScore+"\r\n");
 		if(logEnabled)
 			log.append("Starting Node: "+currNode.toString()+" Value: "+currScore+"\r\n");
 		
@@ -183,7 +188,7 @@ public abstract class HillClimb {
 				currNode = nextNode;
 				currScore = nextScore;
 				
-//				System.out.println("NEW BEST NODE: "+currNode.toString()+" Value: "+currScore);
+				System.out.println("NEW BEST NODE: "+currNode.toString()+" Value: "+currScore);
 				if(logEnabled)
 					log.append("NEW BEST NODE: "+currNode.toString()+" Value: "+currScore+"\r\n");
 			}
