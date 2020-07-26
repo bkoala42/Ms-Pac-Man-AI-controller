@@ -1,6 +1,5 @@
 package pacman.entries.pacman;
 
-import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -20,7 +19,8 @@ import com.google.common.collect.Lists;
 
 /**
  * Abstract implementation of the hill climbing algorithm
- * Subclasses specialize the process of selection of the best node in the main loop of the algorithm
+ * Subclasses specialize the process of selection of the best node in the main loop of the algorithm,
+ * according to the Template Method pattern
  */
 public abstract class HillClimb {
 	
@@ -49,6 +49,7 @@ public abstract class HillClimb {
 		this.logEnabled = false;
 		this.randomStart = false;
 		
+		// build the parameters space computing the cartesian product of the domains of the parameters
 		List<List<Integer>> parametersValues = new ArrayList<List<Integer>>();
 		
 		for(String par: this.parameters.keySet()) {
@@ -58,10 +59,18 @@ public abstract class HillClimb {
 		this.parametersSpace = Lists.cartesianProduct(parametersValues);
 	}
 	
+	/**
+	 * Setter to define random restart
+	 * @param random true if random restart is required, false otherwise
+	 */
 	public void setRandomStart(boolean random) {
 		this.randomStart = random;
 	}
 	
+	/**
+	 * Setter for the number of games to be played to compute the value of the current node
+	 * @param trials number of games
+	 */
 	public void setTrials(int trials) {
 		this.trials = trials;
 	}
@@ -98,12 +107,6 @@ public abstract class HillClimb {
 			lists.add(Arrays.asList(new Integer[] {negVariation, posVariation}));
 			i++;
 		}
-		
-//		for(int i = 0; i < state.size(); i++) {
-//			negVariation = parameters.get(i).getPreviousValue(state.get(i));
-//			posVariation = parameters.get(i).getNextValue(state.get(i));
-//			lists.add(Arrays.asList(new Integer[] {negVariation, posVariation}));
-//		}
 		
 		return Lists.cartesianProduct(lists);
 	}
@@ -153,20 +156,20 @@ public abstract class HillClimb {
 		if(logEnabled) {
 			log = new StringBuffer("Hill climbing tuning: \r\n");
 		}
+		
 		// initialize climbing loop taking the first node, set the node parameters for the controller
 		List<Integer> currNode = getInitialNode();
 		List<Integer> nextNode = null;
-		System.out.println("Iterating...");
+		
+		// prepare the agent to the experiment setting the current parameters of the node under examination
 		setControllerNewParameters(currNode);
 		msPacManController.printParameters();
 		currScore = exec.runExperiment(msPacManController, ghostController, trials);
 		alreadyVisitedNodes.add(currNode);
-		System.out.println("Starting Node: "+currNode.toString()+" Value: "+currScore+"\r\n");
 		if(logEnabled)
 			log.append("Starting Node: "+currNode.toString()+" Value: "+currScore+"\r\n");
 		
 		while(isImproving) {
-			System.out.println("Iterating...");
 			neighborhood = getNeighborhood(currNode);
 			nextScore = Double.NEGATIVE_INFINITY;
 			
@@ -177,18 +180,15 @@ public abstract class HillClimb {
 				nextScore = score;
 				nextNode = nodeSelectionResult.get(score);
 			}
-//			System.out.println("Valori trovati "+nextNode+" "+nextScore);
 			
 			// update current best result
 			if(nextNode == null) {
 				isImproving = false;
-//				System.out.println("Chiudo il loop "+isImproving);
 			}
 			else {
 				currNode = nextNode;
 				currScore = nextScore;
 				
-				System.out.println("NEW BEST NODE: "+currNode.toString()+" Value: "+currScore);
 				if(logEnabled)
 					log.append("NEW BEST NODE: "+currNode.toString()+" Value: "+currScore+"\r\n");
 			}
@@ -209,6 +209,10 @@ public abstract class HillClimb {
 		return currNode;
 	}
 	
+	/**
+	 * Updates the agent with the new parameters
+	 * @param currentParameters parameters values to update
+	 */
 	protected void setControllerNewParameters(List<Integer> currentParameters) {
 		int i = 0;
 		for(String key: parameters.keySet()) {
@@ -233,20 +237,5 @@ public abstract class HillClimb {
 		}	
 	}
 	
-	
-	
-//	public static void main(String [] args) {
-//		Integer[] state = {3, 4, 5, 6};
-//		int delta = 1;
-//		
-//		List<List<Integer>> lists = new ArrayList<List<Integer>>();
-//		for(Integer i: state) {
-//			lists.add(Arrays.asList(new Integer[] {i-delta, i+delta}));
-//		}
-//		
-//		List<List<Integer>> res = Lists.cartesianProduct(lists);
-//		for(List<Integer> l: res)
-//			System.out.println(l);
-//	}
 }
 

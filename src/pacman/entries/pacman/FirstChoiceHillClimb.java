@@ -29,9 +29,10 @@ public class FirstChoiceHillClimb extends HillClimb {
 		double tmpScore = 0;
 		List<Integer> nextNode = null;
 		
-		// Shuffle the neighborhood and pick the first node that improves the current node value	
+		// Shuffle the neighborhood and pick the first node that has higher value that the current node value	
 		ArrayList<List<Integer>> tmpNeighborhood = new ArrayList<List<Integer>>(neighborhood);
 		Collections.shuffle(tmpNeighborhood);
+		// Loop over the nodes keeping memory of the already visited nodes
 		for(List<Integer> node: tmpNeighborhood) {
 			if(!alreadyVisitedNodes.contains(node)) {
 				alreadyVisitedNodes.add(node);
@@ -39,7 +40,6 @@ public class FirstChoiceHillClimb extends HillClimb {
 				tmpScore = exec.runExperiment(msPacManController, ghostController, trials);
 				if(logEnabled)
 					log.append("Inside new node selection loop, node: "+node.toString()+" Value: "+tmpScore+"\r\n");
-				System.out.println("Inside new node selection loop, node: "+node.toString()+" Value: "+tmpScore+"\r\n");
 
 				if(tmpScore > currScore) {
 					nextNode = node;

@@ -3,13 +3,10 @@ package pacman.entries.pacman;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.EnumMap;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 
 import pacman.Executor;
 import pacman.controllers.Controller;
@@ -20,26 +17,25 @@ import pacman.controllers.examples.RandomGhosts;
 import pacman.game.Constants.GHOST;
 import pacman.game.Constants.MOVE;
 
+/**
+ * Program to start the hill climbing optimization procedure of the agent.
+ *
+ */
 public class MsPacManControllerTuner {
 	
 	public static void main(String [] args) {
 		Executor exec = new Executor();
 		MyMsPacMan msPacManController = new MyMsPacMan();
-		// set all parameters to default value
-//		msPacManController.setMinGhostDistance(-1);
-//		msPacManController.setChaseDistance(-1);
-//		msPacManController.setCleanDistance(-1);
-//		msPacManController.seteatDistanceHigh(-1);
-//		msPacManController.setGuardDistance(-1);
 		
 		// select the ghost team against which tune the controller
-//		Controller<EnumMap<GHOST, MOVE>> ghostController = new RandomGhosts();
+		Controller<EnumMap<GHOST, MOVE>> ghostController = new RandomGhosts();
 //		Controller<EnumMap<GHOST, MOVE>> ghostController = new AggressiveGhosts();
-		Controller<EnumMap<GHOST, MOVE>> ghostController = new Legacy();
+//		Controller<EnumMap<GHOST, MOVE>> ghostController = new Legacy();
 //		Controller<EnumMap<GHOST, MOVE>> ghostController = new Legacy2TheReckoning();
 		
 		// define the set of parameters used by the controller. Their range is defined as equivalence classes
-		// decided by experimental observation of the controller against the different teams
+		// decided by experimental observation of the controller against the different teams. Five possible 
+		// hyper parameters were considered
 		List<Integer> minGhostDistanceValues = new ArrayList<Integer>();
 		minGhostDistanceValues.add(20);
 		minGhostDistanceValues.add(25);
@@ -77,21 +73,13 @@ public class MsPacManControllerTuner {
 		cleanDistanceValues.add(18);
 		ControllerParameter cleanDistance = new ControllerParameter("cleanDistance", cleanDistanceValues);
 		
-		// ATTENZIONE AL TIPO DI MAP O SI SPUTTANA TUTTO
+		// Put all hyper-parameters in a data structure for the hill climbing algorithm
 		Map<String, ControllerParameter> controllerParameters = new LinkedHashMap<String, ControllerParameter>();
 		controllerParameters.put(minGhostDistance.getName(), minGhostDistance);
 		controllerParameters.put(guardDistance.getName(), guardDistance);
-//		controllerParameters.put(chaseDistance.getName(), chaseDistance);
-//		controllerParameters.put(eatDistance.getName(), eatDistance);
-//		controllerParameters.put(cleanDistance.getName(), cleanDistance);
-		
-		// the initial parameters can also be fixed to values decided a priori
-		List<Integer> initialParams = new ArrayList<Integer>();
-		initialParams.add(25);				// ghost distance
-		initialParams.add(5);				// guard distance
-		initialParams.add(50);				// chase distance
-//		initialParams.add(30);				// eat distance
-//		initialParams.add(12);				// clean distance
+		controllerParameters.put(chaseDistance.getName(), chaseDistance);
+		controllerParameters.put(eatDistance.getName(), eatDistance);
+		controllerParameters.put(cleanDistance.getName(), cleanDistance);
 		
 		HillClimb hillClimb;
 		
@@ -104,36 +92,19 @@ public class MsPacManControllerTuner {
 		// tune using first choice hill climbing
 		hillClimb = new FirstChoiceHillClimb(exec, msPacManController, ghostController, controllerParameters);
 
-		List<List<Integer>> paramtersSpace = hillClimb.getParametersSpace();
-		System.out.println("Checking parameters space correctness, number of combinations "+paramtersSpace.size());
-		for(List<Integer> l: paramtersSpace) {
-			System.out.println("# "+l);
-		}
-		
-		List<List<Integer>> neigh = hillClimb.getNeighborhood(initialParams);
-		System.out.println("Checking correctness of neighborhood computation,  number of combinations "+neigh.size());
-		for(List<Integer> l: neigh) {
-			System.out.println("# "+l);
-		}
-		
-//		System.out.println(hillClimb.getInitialNode());
+		// Set hill climbing random restart
 		hillClimb.setRandomStart(true);
-//		System.out.println(hillClimb.getInitialNode());
-//		System.out.println(hillClimb.getInitialNode());
-//		System.out.println(hillClimb.getInitialNode());
-		
-		
 		// enable/disable the log file to check the training procedure
 		hillClimb.setLogEnabled(true);
-		// set randomized start of the process
-		hillClimb.setRandomStart(true);
 		// set number of trials to assess the score
-		hillClimb.setTrials(1);
+		hillClimb.setTrials(10);
 
+		// Define a new log to check the entire training procedure
 		StringBuffer log = new StringBuffer("Hill climbing tuning with epochs: \r\n");
 		
 		double maxScore = 0, tmpScore = 0;
-		int epochs = 3;
+		// set the number of hill climbing restarts
+		int epochs = 5;
 		List<Integer> optParametersValues = null; 
 		while(epochs > 0) {
 			optParametersValues = hillClimb.climbingLoop(hillClimb.getInitialNode());

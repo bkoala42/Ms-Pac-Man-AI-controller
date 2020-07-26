@@ -87,7 +87,6 @@ public class MyMsPacMan extends Controller<MOVE> {
 	}
 	
 	public MOVE getMove(Game game, long timeDue) {
-		long startTime = System.currentTimeMillis();
 		
 		int posMsPacman = game.getPacmanCurrentNodeIndex();
 		
@@ -108,14 +107,9 @@ public class MyMsPacMan extends Controller<MOVE> {
 		int utility0[] = new int[2];
 		int utility1[] = new int[2];
 		
-		// heuristic1 is intrinsically more important than heuristic0, so it has always higher utility value. If it is
-		// more than the max utility value of heuristic0 do not call it
+		// query the two heuristic functions to find the most suitable action given the environment state
 		utility1 = heuristic1(game, moves);
 		utility0 = heuristic0(game, moves);	
-//		if(utility1[0] < 50)
-//			utility0 = heuristic0(game, moves);	
-//		else
-//			utility0[0] = 0;
 		
 		if(utility0[0] > utility1[0]) {
 //			System.out.println("heur0 won " + utility0[0] + " move: " + moves[utility0[1]]);
@@ -126,7 +120,6 @@ public class MyMsPacMan extends Controller<MOVE> {
 			myMove = moves[utility1[1]];
 		}
 
-//		System.out.println("Time: " + (System.currentTimeMillis() - startTime));
 		return myMove;
 	}
 		

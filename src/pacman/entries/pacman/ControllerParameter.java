@@ -1,9 +1,13 @@
 package pacman.entries.pacman;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * Class abstracting the concept of hyper-parameter, showing a useful interface to the hill climbing
+ * algorithm implementation
+ *
+ */
 public class ControllerParameter {
 	private int maxValue;
 	private int minValue;
@@ -33,6 +37,11 @@ public class ControllerParameter {
 		return values;
 	}
 	
+	/**
+	 * Gets the next value, according the natural ordering of the hyper-parameter. Used by hill climbing to find the neighborhood of a node
+	 * @param state current value of the hyper-parameter
+	 * @return next value of the hyper-parameter
+	 */
 	public Integer getNextValue(Integer state) {
 		int nextState = -1;
 		int stateIndex = values.indexOf(state);
@@ -45,6 +54,11 @@ public class ControllerParameter {
 		return nextState;
 	}
 	
+	/**
+	 * Gets the previous value, according the natural ordering of the hyper-parameter. Used by hill climbing to find the neighborhood of a node
+	 * @param state current value of the hyper-parameter
+	 * @return previous value of the hyper-parameter
+	 */
 	public Integer getPreviousValue(Integer state) {
 		int previousState = -1;
 		int stateIndex = values.indexOf(state);
@@ -61,22 +75,4 @@ public class ControllerParameter {
 		return name+" values: "+values.toString();
 	}
 	
-//	public static void main(String [] args) {
-//		Integer[] par = new Integer[4];
-//		par[0] = 1;
-//		par[1] = 2;
-//		par[2] = 3;
-//		par[3] = 4;
-//		ControllerParameter cPar = new ControllerParameter("Prova", Arrays.asList(par));
-//		
-//		System.out.println(cPar.getMaxValue());
-//		System.out.println(cPar.getMinValue());
-//		System.out.println(cPar.getName());
-//		System.out.println(cPar.getValues());
-//		System.out.println(cPar);
-//		System.out.println(cPar.getNextValue(2));
-//		System.out.println(cPar.getPreviousValue(2));
-//		System.out.println(cPar.getNextValue(4));
-//		System.out.println(cPar.getPreviousValue(1));
-//	}
 }

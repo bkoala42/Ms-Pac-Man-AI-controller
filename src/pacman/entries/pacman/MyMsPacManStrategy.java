@@ -13,12 +13,6 @@ import pacman.game.Constants.GHOST;
 // according to environment state
 public class MyMsPacManStrategy {
 	
-//	private static final int CHASE_DISTANCE = 50;
-//	private static final int GUARD_DISTANCE = 5;
-//	private static final int MIN_DISTANCE = 25;
-//	private static final int CLEAN_DISTANCE = 11;
-//	private static final int EAT_DISTANCE_HIGH = 30;
-	
 	private int minGhostDistance;
 	private int guardDistance;
 	private int chaseDistance;

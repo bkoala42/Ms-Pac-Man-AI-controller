@@ -27,7 +27,8 @@ public class BasicHillClimb extends HillClimb {
 		double tmpScore = 0;
 		List<Integer> nextNode = null;
 		
-		// loop over all the nodes of the neighborhood and find the one with the highest value
+		// loop over all the nodes of the neighborhood and find the one with the highest value, keep memory of the
+		// already visited nodes
 		for(List<Integer> node: neighborhood) {
 			if(!alreadyVisitedNodes.contains(node)) {
 				alreadyVisitedNodes.add(node);

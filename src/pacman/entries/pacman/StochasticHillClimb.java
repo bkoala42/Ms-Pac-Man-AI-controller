@@ -32,7 +32,7 @@ public class StochasticHillClimb extends HillClimb {
 		double tmpScore = 0;
 		Random rand = new Random();
 		// loop over all the nodes of the neighborhood and store all those having an improvement with respect to the current 
-		// result. Then pick randomly one of them as new node
+		// result. Then pick randomly one of them as new node. Always keep memory of the already visited nodes
 		for(List<Integer> node: neighborhood) {
 			if(!alreadyVisitedNodes.contains(node)) {
 				alreadyVisitedNodes.add(node);
