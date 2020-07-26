@@ -651,7 +651,6 @@ public class MyMsPacManStrategy {
 					// Be careful to not cross ghosts in the lair when chasing and edible ghost
 					if(GHOST_IN_THE_LAIR) {
 						int[] pathToMinGhost = game.getShortestPath(pos, game.getGhostCurrentNodeIndex(ghost));
-						GameView.addPoints(game, Color.blue, pathToMinGhost);
 						boolean safe = true;
 						for(int node: pathToMinGhost) {
 							if(node == game.getGhostInitialNodeIndex() && game.getShortestPathDistance(pos, game.getGhostInitialNodeIndex()) < guardDistance) {

@@ -1,14 +1,18 @@
 package pacman;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.Random;
 import pacman.controllers.Controller;
 import pacman.controllers.HumanController;
@@ -25,6 +29,8 @@ import pacman.controllers.examples.StarterGhosts;
 import pacman.controllers.examples.StarterPacMan;
 import pacman.game.Game;
 import pacman.game.GameView;
+import pacman.game.Constants.GHOST;
+import pacman.game.Constants.MOVE;
 
 import static pacman.game.Constants.*;
 
@@ -47,262 +53,62 @@ public class Executor
 	 *
 	 * @param args the command line arguments
 	 */
-	
-	// define hyperparameters range of variation
-	static float maxGamma0 = -0.5f;
-	static float minGamma0 = -1;
-	static float maxGamma1 = -0.1f;
-	static float minGamma1 = -0.01f;
-	static float maxAlfa0 = -0.005f;
-	static float minAlfa0 = -0.01f;
-	static float maxAlfa1 = -0.02f;
-	static float minAlfa1 = -0.04f;
-	static float maxBeta0 = -0.002f;
-	static float minBeta0 = -0.005f;
-	static float maxBeta1 = -0.02f;
-	static float minBeta1 = -0.2f;
-	static int minGhostDistance = 5;
-	static int maxGhostDistance = 20;
-	
-	// values for simulations assessments
-	static int numTrials = 100;
 			
 	public static void main(String[] args)
 	{
 		Executor exec=new Executor();
+
+		MyMsPacMan agent = new MyMsPacMan();	// Default parameters
 		
-		// files for distances management
-		FileWriter ghostsDistancesFile = null;
-		FileWriter powerPillDistancesFile = null;
-		FileWriter pillDistancesFile = null;
-		try {
-			ghostsDistancesFile = new FileWriter("ghostDistances.txt");
-			powerPillDistancesFile = new FileWriter("powerPillDistances.txt");
-			pillDistancesFile = new FileWriter("pillDistances.txt");
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		FileWriter[] files = {ghostsDistancesFile, powerPillDistancesFile, pillDistancesFile};
+		/*
+		agent.seteatDistanceHigh(40); // Aggressive ghost team parameters from HC
+	    agent.setGuardDistance(6);
+	    agent.setMinGhostDistance(40);
+	    */
+	    
+		/*
+	    agent.setChaseDistance(40); // Random ghost team parameters from HC
+	    agent.setGuardDistance(4);
+	    agent.setMinGhostDistance(20);
+	    */
+	    
+//		/*
+		//run the game in asynchronous mode.
+		boolean visual=true;
+		exec.runGameTimed(agent,new RandomGhosts(),visual);
+//		*/
 		
-		
-		// start best parameters search with min values
-		float[] hypParam0 = {minAlfa0, minBeta0, maxGamma0};
-		float[] hypParam1 = {minAlfa1, maxBeta1, minGamma1};
-		int ghostDistance = maxGhostDistance;
-		
-		int i = 0, lateralMovesPlateau = 30;
-		double prevScore = 0, currScore = 0;
-		boolean betterSolution = false;
-		// compute initial score with conservative values
-		prevScore = 0;
-		currScore = exec.runExperiment(new MyPacMan(hypParam0, hypParam1, maxGhostDistance),new AggressiveGhosts(),numTrials);
-		System.out.println("Starting score: "+currScore);
-		//prevScore = exec.runExperiment(new MyPacMan(hypParam0, hypParam1, maxGhostDistance),new AggressiveGhosts(),numTrials);
-		//prevScore = exec.runExperiment(new MyPacMan(hypParam0, hypParam1, maxGhostDistance),new Legacy(),numTrials);
-		//prevScore = exec.runExperiment(new MyPacMan(hypParam0, hypParam1, maxGhostDistance),new Legacy2TheReckoning(),numTrials);
-		while(currScore > prevScore || lateralMovesPlateau > 0) {
-			prevScore = currScore;
-			currScore = adjustHyperParameter(exec, hypParam0, hypParam1, ghostDistance, prevScore);
-			if(currScore == prevScore)
-				lateralMovesPlateau--;
-			else
-				lateralMovesPlateau = 30;
-			System.out.println("Iteration "+i+" new score: "+currScore);
-			i++;
-		}
-		for (float element: hypParam0) {
-            System.out.println(element);
-        }
-		System.out.println();
-		for (float element: hypParam1) {
-            System.out.println(element);
-        }
-		System.out.println(ghostDistance);
-		
-		
+		/*
 		//run multiple games in batch mode - good for testing.
-//		int numTrials=200;
-//		float[] hypParam0 = {1.06f, 1.4f, 2.6f};
-//		float[] hypParam1 = {1.0f, 3.7f, 1.0f};
-//		int ghostDistance = 8;
-//		System.out.println(exec.runExperiment(new MyPacMan(hypParam0, hypParam1, maxGhostDistance),new AggressiveGhosts(),numTrials));
-		//exec.runExperiment(new MyPacMan(),new RandomGhosts(),numTrials);
-		//exec.runExperiment(new MyPacMan(),new AggressiveGhosts(),numTrials);
-		//exec.runExperiment(new MyPacMan(),new Legacy(),numTrials);
-		//exec.runExperiment(new MyPacMan(),new Legacy2TheReckoning(),numTrials);
-		
+		int numTrials=10;
+		exec.runExperiment(agent,new RandomGhosts(),numTrials);
+		*/
 		
 		/*
 		//run a game in synchronous mode: game waits until controllers respond.
 		int delay=5;
 		boolean visual=true;
-		exec.runGame(new MyPacMan(),new RandomGhosts(),visual,delay);
+		exec.runGame(agent,new RandomGhosts(),visual,delay);
   		*/
-		
-		
-//		//run the game in asynchronous mode.
-//		float[] hypParam0 = {minAlfa0, minBeta0, minGamma0};
-//		float[] hypParam1 = {minAlfa1, minBeta1, minGamma1};
-//		int ghostDistance = 10;
-//		boolean visual=true;
-////		exec.runGameTimed(new NearestPillPacMan(),new AggressiveGhosts(),visual);
-////		exec.runGameTimed(new StarterPacMan(),new StarterGhosts(),visual);
-////		exec.runGameTimed(new HumanController(new KeyBoardInput()),new StarterGhosts(),visual);	
-//		exec.runGameTimed(new MyPacMan(hypParam0, hypParam1, ghostDistance),new AggressiveGhosts(),visual);
-		
-		
-//		try {
-//			ghostsDistancesFile.close();
-//			powerPillDistancesFile.close();
-//			pillDistancesFile.close();	
-//		} catch (IOException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
 		
 		/*
 		//run the game in asynchronous mode but advance as soon as both controllers are ready  - this is the mode of the competition.
 		//time limit of DELAY ms still applies.
 		boolean visual=true;
 		boolean fixedTime=false;
-		exec.runGameTimedSpeedOptimised(new MyPacMan(hypParam0, hypParam1, ghostDistance),new RandomGhosts(),fixedTime,visual);
+		exec.runGameTimedSpeedOptimised(agent,new RandomGhosts(),fixedTime,visual);
 		*/
 		
 		/*
 		//run game in asynchronous mode and record it to file for replay at a later stage.
 		boolean visual=true;
 		String fileName="replay.txt";
-		exec.runGameTimedRecorded(new HumanController(new KeyBoardInput()),new RandomGhosts(),visual,fileName);
+		exec.runGameTimedRecorded(agent,new RandomGhosts(),visual,fileName);
 		//exec.replayGame(fileName,visual);
-		 */
+		*/
+		
 	}
 	
-	/**
-	 * Tries to change one hyperparameter at time, following the direction of best score improvement.
-	 * VERY SILLY IMPLEMENTATION, NO CARE ABOUT GHOST TEAM STRATEGY, MANUALLY CHANGE IT
-	 * @param exec	game executor
-	 * @param hypParam0  utility0 hyperparameters
-	 * @param hypParam1  utility1 hyperparameters
-	 * @param minDistance  minimum sasfe distance from ghosts
-	 * @param score current score reached
-	 * @return new score if a hyperparameter was changed, score otherwise
-	 */
-	public static double adjustHyperParameter(Executor exec, float[] hypParam0, float[] hypParam1, int minDistance, double score) {
-		float delta = 1.5f;
-		double newScore = 0;
-		int newMinDistance = 0;
-		float[] testParam = new float[3];
-		ArrayList<Double> scoreVariation = new ArrayList<>(7);
-		ArrayList<Double> scoreDifference = new ArrayList<>(7);
-		// parameter after parameter evaluate which one gives the best results
-		// adjust alfa0
-		//float newAlfa0 = hypParam0[0] + Math.abs(maxAlfa0 - minAlfa0)/delta;
-		float newAlfa0 = hypParam0[0] - minAlfa0/delta;
-		testParam[0] = newAlfa0;  testParam[1] = hypParam0[1]; testParam[2] = hypParam0[2];
-		newScore = exec.runExperiment(new MyPacMan(testParam, hypParam1, minDistance),new AggressiveGhosts(),numTrials);
-		//prevScore = exec.runExperiment(new MyPacMan(hypParam0, hypParam1, maxGhostDistance),new AggressiveGhosts(),numTrials);
-		//prevScore = exec.runExperiment(new MyPacMan(hypParam0, hypParam1, maxGhostDistance),new Legacy(),numTrials);
-		//prevScore = exec.runExperiment(new MyPacMan(hypParam0, hypParam1, maxGhostDistance),new Legacy2TheReckoning(),numTrials);
-		scoreVariation.add(newScore);
-		// adjust alfa1
-		//float newAlfa1 = hypParam1[0] + Math.abs(maxAlfa1 - minAlfa1)/delta;
-		float newAlfa1 = hypParam1[0] - minAlfa1/delta;
-		testParam[0] = newAlfa1;  testParam[1] = hypParam1[1]; testParam[2] = hypParam1[2];
-		newScore = exec.runExperiment(new MyPacMan(hypParam0, testParam, minDistance),new AggressiveGhosts(),numTrials);
-		//prevScore = exec.runExperiment(new MyPacMan(hypParam0, hypParam1, maxGhostDistance),new AggressiveGhosts(),numTrials);
-		//prevScore = exec.runExperiment(new MyPacMan(hypParam0, hypParam1, maxGhostDistance),new Legacy(),numTrials);
-		//prevScore = exec.runExperiment(new MyPacMan(hypParam0, hypParam1, maxGhostDistance),new Legacy2TheReckoning(),numTrials);
-		scoreVariation.add(newScore);
-		// adjust beta0
-		//float newBeta0 = hypParam0[1] + Math.abs(maxBeta0 - minBeta0)/delta;
-		float newBeta0 = hypParam0[1] - minBeta0/delta;
-		testParam[0] = hypParam0[0];  testParam[1] = newBeta0; testParam[2] = hypParam0[2];
-		newScore = exec.runExperiment(new MyPacMan(testParam, hypParam1, minDistance),new AggressiveGhosts(),numTrials);
-		scoreVariation.add(newScore);
-		// adjust beta1
-		//float newBeta1 = hypParam1[1] + Math.abs(maxBeta1 - minBeta1)/delta;
-		float newBeta1 = hypParam1[1] - minBeta1/delta;
-		testParam[0] = hypParam1[0];  testParam[1] = newBeta1; testParam[2] = hypParam1[2];
-		newScore = exec.runExperiment(new MyPacMan(hypParam0, testParam, minDistance),new AggressiveGhosts(),numTrials);
-		//prevScore = exec.runExperiment(new MyPacMan(hypParam0, hypParam1, maxGhostDistance),new AggressiveGhosts(),numTrials);
-		//prevScore = exec.runExperiment(new MyPacMan(hypParam0, hypParam1, maxGhostDistance),new Legacy(),numTrials);
-		//prevScore = exec.runExperiment(new MyPacMan(hypParam0, hypParam1, maxGhostDistance),new Legacy2TheReckoning(),numTrials);
-		scoreVariation.add(newScore);
-		// adjust gamma0
-		//float newGamma0 = hypParam0[2] + Math.abs(maxGamma0 - minGamma0)/delta;
-		float newGamma0 = hypParam0[2] - minGamma0/delta;
-		testParam[0] = hypParam0[0];  testParam[1] = hypParam0[1]; testParam[2] = newGamma0;
-		newScore = exec.runExperiment(new MyPacMan(testParam, hypParam1, minDistance),new AggressiveGhosts(),numTrials);
-		//prevScore = exec.runExperiment(new MyPacMan(hypParam0, hypParam1, maxGhostDistance),new AggressiveGhosts(),numTrials);
-		//prevScore = exec.runExperiment(new MyPacMan(hypParam0, hypParam1, maxGhostDistance),new Legacy(),numTrials);
-		//prevScore = exec.runExperiment(new MyPacMan(hypParam0, hypParam1, maxGhostDistance),new Legacy2TheReckoning(),numTrials);
-		scoreVariation.add(newScore);
-		// adjust gamma1
-		//float newGamma1 = hypParam1[2] - Math.abs(maxGamma1 - minGamma1)/delta;
-		float newGamma1 = hypParam1[2] + minGamma1/delta;
-		testParam[0] = hypParam1[0];  testParam[1] = hypParam1[1]; testParam[2] = newGamma1;
-		newScore = exec.runExperiment(new MyPacMan(hypParam0, testParam, minDistance),new AggressiveGhosts(),numTrials);
-		//prevScore = exec.runExperiment(new MyPacMan(hypParam0, hypParam1, maxGhostDistance),new AggressiveGhosts(),numTrials);
-		//prevScore = exec.runExperiment(new MyPacMan(hypParam0, hypParam1, maxGhostDistance),new Legacy(),numTrials);
-		//prevScore = exec.runExperiment(new MyPacMan(hypParam0, hypParam1, maxGhostDistance),new Legacy2TheReckoning(),numTrials);
-		scoreVariation.add(newScore);
-		// adjust minDistance
-		if(minDistance > minGhostDistance)
-			newMinDistance = minDistance - 1;
-		newScore = exec.runExperiment(new MyPacMan(hypParam0, hypParam1, newMinDistance),new AggressiveGhosts(),numTrials);
-		//prevScore = exec.runExperiment(new MyPacMan(hypParam0, hypParam1, maxGhostDistance),new AggressiveGhosts(),numTrials);
-		//prevScore = exec.runExperiment(new MyPacMan(hypParam0, hypParam1, maxGhostDistance),new Legacy(),numTrials);
-		//prevScore = exec.runExperiment(new MyPacMan(hypParam0, hypParam1, maxGhostDistance),new Legacy2TheReckoning(),numTrials);
-		scoreVariation.add(newScore);
-		// pick the best hyperparamter variation
-		for(Double d : scoreVariation) {
-			scoreDifference.add(d - score);
-		}
-		if(Collections.max(scoreDifference) > 0) {
-			int bestAdjustment = scoreDifference.indexOf(Collections.max(scoreDifference));
-			switch(bestAdjustment) {
-				case 0:
-					// alfa0 adjustment was the best
-					System.out.println("Adjusted alfa0");
-					hypParam0[0] = newAlfa0;
-					break;
-				case 1:
-					System.out.println("Adjusted alfa1");
-					hypParam1[0] = newAlfa1;
-					// alfa1 adjustment was the best
-					break;
-				case 2:
-					System.out.println("Adjusted beta0");
-					hypParam0[1] = newBeta0;
-					// beta0 adjustment was the best
-					break;
-				case 3:
-					System.out.println("Adjusted beta1");
-					hypParam1[1] = newBeta1;
-					// beta1 adjustment was the best
-					break;
-				case 4:
-					// gamma0 adjustment was the best
-					System.out.println("Adjusted gamma0");
-					hypParam0[2] = newGamma0;
-					break;
-				case 5:
-					hypParam1[2] = newGamma1;
-					System.out.println("Adjusted gamma1");
-					// gamma1 adjustment was the best
-					break;
-				case 6:
-					// minDistance adjustment was the best
-					System.out.println("Adjusted min distance");
-					minDistance = newMinDistance;
-					break;
-			}
-			return scoreVariation.get(bestAdjustment);
-		}
-		else
-			return score;
-	}
 	
     /**
      * For running multiple games without visuals. This is useful to get a good idea of how well a controller plays
@@ -316,26 +122,90 @@ public class Executor
      */
     public double runExperiment(Controller<MOVE> pacManController,Controller<EnumMap<GHOST,MOVE>> ghostController,int trials)
     {
+    	long startTime = java.lang.System.currentTimeMillis();
     	double avgScore=0;
-    	
-    	Random rnd=new Random(0);
-		Game game;
-		
-		for(int i=0;i<trials;i++)
-		{
-			game=new Game(rnd.nextLong());
-			
-			while(!game.gameOver())
-			{
-		        game.advanceGame(pacManController.getMove(game.copy(),System.currentTimeMillis()+DELAY),
-		        		ghostController.getMove(game.copy(),System.currentTimeMillis()+DELAY));
-			}
-			
-			avgScore+=game.getScore();
-			//System.out.println(i+"\t"+game.getScore());
-		}
-		
-		//System.out.println(avgScore/trials);
+    	PrintWriter writer = null;
+    	try {
+    		writer = new PrintWriter(new File("SimulationVS"+ghostController.toString()+".csv"));
+    		StringBuffer csvHeader = new StringBuffer("");
+    		csvHeader.append("Simulation;SimulationDuration;MaxScore;MaxLevel;LivesRemaining;ListLevelsDeaths;ListMazesDeaths;MatchTime;ListPerLevelStatistics;TotalGhostsEaten;ghostsEatenPerLevel;ghostsEatenPerMaze\n");
+    		// write header
+    		writer.write(csvHeader.toString());
+
+    		Random rnd=new Random(0);
+    		Game game;
+    		ArrayList<Integer> levelsInWhichPacmanDied = new ArrayList<Integer>();
+    		ArrayList<Integer> mazesInWhichPacmanDied = new ArrayList<Integer>();
+    		ArrayList<String> levelStatistics = new ArrayList<String>();
+    		ArrayList<String> totalLevelStatistics = new ArrayList<String>();
+    		HashMap<Integer,Integer> ghostsEatenPerLevel = new HashMap<Integer, Integer>();
+    		HashMap<Integer,Integer> ghostsEatenPerMaze = new HashMap<Integer, Integer>();
+    		int numGhostEaten = 0;
+
+    		for(int i=0;i<trials;i++)
+    		{
+    			int nextLevel = 1;
+    			mazesInWhichPacmanDied.clear();
+    			levelsInWhichPacmanDied.clear();
+    			ghostsEatenPerLevel.clear();
+    			ghostsEatenPerMaze.clear();
+    			totalLevelStatistics.clear();
+    			levelStatistics.clear();
+    			numGhostEaten = 0;
+    			
+    			long startSimulationTime = java.lang.System.currentTimeMillis();
+    			game=new Game(rnd.nextLong());
+    			while(!game.gameOver())
+    			{
+    				game.advanceGame(pacManController.getMove(game.copy(),System.currentTimeMillis()+DELAY),
+    						ghostController.getMove(game.copy(),System.currentTimeMillis()+DELAY));
+    				if(game.wasPacManEaten()) {
+    					levelsInWhichPacmanDied.add(game.getCurrentLevel());
+    					mazesInWhichPacmanDied.add(game.getMazeIndex());
+    				}
+    				if((game.getActivePillsIndices().length + game.getActivePowerPillsIndices().length) == 1 )
+    				{
+    					levelStatistics.clear();
+    					levelStatistics.add(game.getStatistics());
+    				}
+    				if((!levelStatistics.isEmpty() && game.getCurrentLevel() == nextLevel)) {
+    					totalLevelStatistics.add(levelStatistics.get(levelStatistics.size()-1));
+    					nextLevel++;
+    				}
+    				for(GHOST ghost : GHOST.values()) { 
+    					if(game.wasGhostEaten(ghost)) {
+    						numGhostEaten++;
+    						try {
+    							ghostsEatenPerLevel.put(game.getCurrentLevel(), ghostsEatenPerLevel.get(game.getCurrentLevel())+1);
+    						}
+    						catch (NullPointerException e) {
+    							ghostsEatenPerLevel.put(game.getCurrentLevel(), 1);
+    						}
+    						try {
+    							ghostsEatenPerMaze.put(game.getMazeIndex(), ghostsEatenPerMaze.get(game.getMazeIndex())+1);
+    						}catch (NullPointerException e) {
+    							ghostsEatenPerMaze.put(game.getMazeIndex(), 1);	
+    						}
+    					}
+    				}
+    			}
+    			
+    			avgScore+=game.getScore();
+    			long totalSimulationTime = java.lang.System.currentTimeMillis() - startSimulationTime;
+//    			System.out.println(i+"\t"+totalSimulationTime+"\t"+game.getScore()+"\t"+game.getCurrentLevel()+"\t"+game.getPacmanNumberOfLivesRemaining()+"\t"+levelsInWhichPacmanDied
+//    					+"\t"+mazesInWhichPacmanDied+"\t"+game.getTotalTime()+"\t"+totalLevelStatistics+"\t"+numGhostEaten+"\t"+ghostsEatenPerLevel+"\t"+ghostsEatenPerMaze);
+    			writer.println(i+";"+totalSimulationTime+";"+game.getScore()+";"+game.getCurrentLevel()+";"+game.getPacmanNumberOfLivesRemaining()+";"+
+    					levelsInWhichPacmanDied+";"+mazesInWhichPacmanDied+";"+game.getTotalTime()+";"+totalLevelStatistics+";"
+    					+numGhostEaten+";"+ghostsEatenPerLevel+";"+ghostsEatenPerMaze
+    					);
+    		}
+    		writer.close();
+    	} catch (FileNotFoundException e) {
+    		// TODO Auto-generated catch block
+    		e.printStackTrace();
+    	}
+		System.out.println(avgScore/trials);
+//		System.out.println("Time: " + (java.lang.System.currentTimeMillis() - startTime));
 		return avgScore/trials;
     }
 	

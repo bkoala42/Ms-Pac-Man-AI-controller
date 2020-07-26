@@ -241,6 +241,17 @@ public final class Game
 		return sb.toString();
 	}
 	
+	
+	public String getStatistics()
+	{
+		StringBuilder sb=new StringBuilder();
+
+		sb.append(mazeIndex+"-"+totalTime+"-"+score+"-"+currentLevelTime+"-"+levelCount+"-"
+				+pacman.numberOfLivesRemaining+"-"+pacman.hasReceivedExtraLife);	
+		
+		return sb.toString();
+	}
+	
 	/**
 	 * Sets the game state from a string: the inverse of getGameState(). It reconstructs
 	 * all the game's variables from the string.
