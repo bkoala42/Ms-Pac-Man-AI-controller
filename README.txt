@@ -18,5 +18,9 @@ do not change with respect to the starting code repository.
 	 ++ ControllerParameter.java	  class abstracting the concept of hyper-parameter
 	 ++ MsPacManControllerTuner.java  contains the learning procedure for the agent using a hill climb algorithm implementation
 
+-- lib
+   ++ guava-29.0-jre.jar		  supplementary library used in the hill climb procedure
+
 To verify the agent abilities run games in visual mode or batch mode following the instructions in Executor.java. To start a learning 
-procedure follow the instructions in MsPacManControllerTuner.java. Be careful, training process may be very time demanding.
+procedure follow the instructions in MsPacManControllerTuner.java and add to the build path of the project the guava library jar file
+available in the lib folder. Be careful, training process may be very time demanding.
