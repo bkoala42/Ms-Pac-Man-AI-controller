@@ -9,7 +9,7 @@ do not change with respect to the starting code repository.
 					  default implemented controller ready and, as an example, the asynchronous 
 					  mode is left uncommented
       -- entries/pacman
-         ++ MyMsPacMan.java		  contains the utility-based agent function
+         ++ MyMsPacMan.java		  contains the utility-based agent program
          ++ MyMsPacManStrategy.java	  contains the search strategies adopted in the evaluation of the utility
 	 ++ HillClimb.java		  abstract implementation of the hill climb algorithm
 	 ++ BasicHillClimb.java		  implementation of the basic hill climb algorithm
